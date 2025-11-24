@@ -264,13 +264,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     children: [
                       // Header
                       Container(
-                        padding: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.all(12),
                         width: double.infinity,
                         color: const Color(0xFF2C2C2C),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 const Text(
                                   'Preview',
@@ -278,37 +279,42 @@ class _HomeScreenState extends State<HomeScreen> {
                                     color: Colors.white54,
                                     fontWeight: FontWeight.bold,
                                     letterSpacing: 1,
+                                    fontSize: 11,
                                   ),
                                 ),
-                                const SizedBox(width: 12),
-                                ElevatedButton(
-                                  onPressed: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => const GhsScreen(),
-                                      ),
-                                    );
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                    backgroundColor: const Color(0xFF03DAC6),
-                                    foregroundColor: Colors.black,
-                                    minimumSize: Size.zero,
-                                  ),
-                                  child: const Text(
-                                    'Open GHS',
-                                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                                  ),
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    _ShortcutBadge(label: 'R'),
+                                    const SizedBox(width: 2),
+                                    _ShortcutBadge(label: 'F5'),
+                                  ],
                                 ),
                               ],
                             ),
-                            Row(
-                              children: [
-                                _ShortcutBadge(label: 'R'),
-                                const SizedBox(width: 4),
-                                _ShortcutBadge(label: 'F5'),
-                              ],
+                            const SizedBox(height: 8),
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => const GhsScreen(),
+                                    ),
+                                  );
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                  backgroundColor: const Color(0xFF03DAC6),
+                                  foregroundColor: Colors.black,
+                                  minimumSize: Size.zero,
+                                ),
+                                child: const Text(
+                                  'GHS',
+                                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                                ),
+                              ),
                             ),
                           ],
                         ),

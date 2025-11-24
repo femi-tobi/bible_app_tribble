@@ -1,10 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:desktop_multi_window/desktop_multi_window.dart';
-import 'package:window_manager/window_manager.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'dart:io' show Platform;
 import 'providers/ghs_provider.dart';
 import 'screens/ghs_presentation_screen.dart';
 import 'models/hymn.dart';
@@ -17,18 +15,9 @@ void main(List<String> args) async {
   // Parse window arguments
   final windowId = int.parse(args.first);
   
-  // Initialize window manager for this presentation window
-  if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
-    await windowManager.ensureInitialized();
-    
-    // Wait for window to be ready, then make it fullscreen/borderless
-    windowManager.waitUntilReadyToShow(null, () async {
-      await windowManager.setTitleBarStyle(TitleBarStyle.hidden);
-      await windowManager.setFullScreen(true);
-      await windowManager.setAlwaysOnTop(true);
-      await windowManager.show();
-      await windowManager.focus();
-    });
+  print('Presentation window starting with ${args.length} args');
+  for (int i = 0; i < args.length; i++) {
+    print('Arg $i: ${args[i].substring(0, args[i].length > 100 ? 100 : args[i].length)}...');
   }
   
   DesktopMultiWindow.setMethodHandler((call, fromWindowId) async {
@@ -59,11 +48,46 @@ class PresentationWindowApp extends StatelessWidget {
     Hymn? hymn;
     if (args.length > 1) {
       try {
+        print('Parsing hymn from args[1]: ${args[1].substring(0, 50)}...');
         final hymnJson = jsonDecode(args[1]);
         hymn = Hymn.fromJson(hymnJson);
+        print('Successfully parsed hymn: ${hymn.title}');
       } catch (e) {
         print('Error parsing hymn data: $e');
+        print('Args length: ${args.length}');
+        if (args.length > 1) {
+          print('Args[1] preview: ${args[1].substring(0, args[1].length > 200 ? 200 : args[1].length)}');
+        }
       }
+    } else {
+      print('No hymn data in args - args.length = ${args.length}');
+    }
+
+    // Show error if no hymn
+    if (hymn == null) {
+      return MaterialApp(
+        home: Scaffold(
+          backgroundColor: Colors.black,
+          body: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, color: Colors.red, size: 64),
+                const SizedBox(height: 20),
+                const Text(
+                  'No hymn data received',
+                  style: TextStyle(color: Colors.white, fontSize: 24),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'Args: ${args.length}',
+                  style: const TextStyle(color: Colors.white70, fontSize: 16),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
     }
 
     return ChangeNotifierProvider(

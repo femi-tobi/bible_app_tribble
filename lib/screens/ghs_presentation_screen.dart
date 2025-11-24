@@ -143,33 +143,41 @@ class _GhsPresentationScreenState extends State<GhsPresentationScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 80, vertical: 60),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         // Section Label
                         Text(
                           currentSlide.label,
                           style: const TextStyle(
                             color: Color(0xFF03DAC6),
-                            fontSize: 96,
+                            fontSize: 48,
                             fontWeight: FontWeight.bold,
                             letterSpacing: 2,
                           ),
                         ),
-                        const SizedBox(height: 60),
+                        const SizedBox(height: 40),
                         // Content - Maximum 2 lines
-                        ...currentSlide.lines.map((line) => Padding(
-                          padding: const EdgeInsets.only(bottom: 20),
-                          child: Text(
-                            line,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: currentSlide.isTitle ? 96 : 130,
-                              fontWeight: FontWeight.bold,
-                              height: 1.4,
-                              letterSpacing: 1,
-                            ),
+                        Flexible(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: currentSlide.lines.map((line) => Flexible(
+                              child: Padding(
+                                padding: const EdgeInsets.only(bottom: 20),
+                                child: Text(
+                                  line,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: currentSlide.isTitle ? 64 : 72,
+                                    fontWeight: FontWeight.bold,
+                                    height: 1.3,
+                                    letterSpacing: 1,
+                                  ),
+                                ),
+                              ),
+                            )).toList(),
                           ),
-                        )).toList(),
+                        ),
                       ],
                     ),
                   ),

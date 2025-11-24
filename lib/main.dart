@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:window_manager/window_manager.dart';
 import 'package:desktop_multi_window/desktop_multi_window.dart';
-import 'dart:io' show Platform;
 import 'dart:convert';
 import 'providers/bible_provider.dart';
 import 'providers/ghs_provider.dart';
@@ -14,44 +12,51 @@ import 'models/hymn.dart';
 void main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Check if this is a sub-window (presentation window)
-  if (args.firstOrNull != null && int.tryParse(args.first) != null) {
-    // This is a presentation window
-    final windowId = int.parse(args.first);
-    
-    // Parse hymn data from second argument
-    Hymn? hymn;
-    if (args.length > 1) {
-      try {
-        final hymnJson = jsonDecode(args[1]);
-        hymn = Hymn.fromJson(hymnJson);
-      } catch (e) {
-        print('Error parsing hymn data: $e');
-      }
-    }
-    
-    runApp(_createPresentationWindow(windowId, hymn));
-    return;
+  print('=== FLUTTER APP STARTING ===');
+  print('Total args: ${args.length}');
+  for (int i = 0; i < args.length; i++) {
+    final argPreview = args[i].length > 100 ? '${args[i].substring(0, 100)}...' : args[i];
+    print('Arg[$i]: $argPreview');
   }
   
-  // Initialize window manager for desktop platforms (main window)
-  if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
-    await windowManager.ensureInitialized();
+  // Check if this is a sub-window (presentation window)
+  // desktop_multi_window passes args as: ['multi_window', windowId, data]
+  if (args.length >= 2 && args[0] == 'multi_window') {
+    final windowId = int.tryParse(args[1]);
     
-    WindowOptions windowOptions = const WindowOptions(
-      size: Size(1280, 720),
-      minimumSize: Size(800, 600),
-      center: true,
-      backgroundColor: Colors.transparent,
-      skipTaskbar: false,
-      titleBarStyle: TitleBarStyle.normal,
-    );
+    print('Desktop multi-window detected!');
+    print('Window ID from args[1]: $windowId');
     
-    windowManager.waitUntilReadyToShow(windowOptions, () async {
-      await windowManager.show();
-      await windowManager.focus();
-    });
+    if (windowId != null) {
+      // This is a presentation window
+      print('=== SUB-WINDOW DETECTED ===');
+      print('Window ID: $windowId');
+      print('Args count: ${args.length}');
+      
+      // Parse hymn data from third argument (args[2])
+      Hymn? hymn;
+      if (args.length > 2) {
+        try {
+          final jsonPreview = args[2].length > 100 ? args[2].substring(0, 100) : args[2];
+          print('Hymn JSON preview: $jsonPreview...');
+          final hymnJson = jsonDecode(args[2]);
+          hymn = Hymn.fromJson(hymnJson);
+          print('✓ Hymn parsed successfully: ${hymn.title}');
+        } catch (e, stackTrace) {
+          print('✗ Error parsing hymn data: $e');
+          print('Stack trace: $stackTrace');
+        }
+      } else {
+        print('✗ WARNING: No hymn data in args!');
+      }
+      
+      print('Launching presentation window with hymn: ${hymn?.title ?? "NULL"}');
+      runApp(_createPresentationWindow(windowId, hymn));
+      return;
+    }
   }
+  
+  print('=== MAIN WINDOW ===');
   
   runApp(const BibleApp());
 }

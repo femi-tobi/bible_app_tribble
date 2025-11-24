@@ -65,6 +65,7 @@ class PresentationWindowService {
         targetDisplay.size.height,
       );
       
+      // Configure window for fullscreen presentation
       await windowController.setFrame(rect);
       await windowController.setTitle('GHS Presentation');
       await windowController.show();
