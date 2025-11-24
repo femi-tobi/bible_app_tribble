@@ -5,6 +5,7 @@ import 'package:screen_retriever/screen_retriever.dart';
 import 'package:window_manager/window_manager.dart';
 import 'dart:io' show Platform;
 import '../models/hymn.dart';
+import 'windows_window_service.dart';
 
 class PresentationWindowService {
   static int? _presentationWindowId;
@@ -55,6 +56,16 @@ class PresentationWindowService {
       
       // Get window controller
       final windowController = WindowController.fromWindowId(window.windowId);
+      
+      // Apply native frameless style on Windows
+      if (Platform.isWindows) {
+        try {
+          // On Windows, the windowId from desktop_multi_window is the HWND
+          WindowsWindowService.makeWindowFrameless(window.windowId);
+        } catch (e) {
+          print('Error applying frameless style: $e');
+        }
+      }
       
       // Position and size window on target display
       final rect = Offset(

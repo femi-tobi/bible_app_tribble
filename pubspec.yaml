@@ -43,6 +43,8 @@ dependencies:
   window_manager: ^0.4.3
   screen_retriever: ^0.2.0
   desktop_multi_window: ^0.2.0
+  win32: ^5.2.0
+  ffi: ^2.1.0
 
 dev_dependencies:
   flutter_test:

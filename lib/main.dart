@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:desktop_multi_window/desktop_multi_window.dart';
-import 'package:window_manager/window_manager.dart';
 import 'dart:convert';
 import 'providers/bible_provider.dart';
 import 'providers/ghs_provider.dart';
@@ -52,11 +51,6 @@ void main(List<String> args) async {
       }
       
       print('Launching presentation window with hymn: ${hymn?.title ?? "NULL"}');
-      
-      // Configure this window as frameless presentation window
-      await windowManager.ensureInitialized();
-      await windowManager.setTitleBarStyle(TitleBarStyle.hidden);
-      await windowManager.setAlwaysOnTop(true);
       
       runApp(_createPresentationWindow(windowId, hymn));
       return;
