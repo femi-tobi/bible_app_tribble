@@ -57,10 +57,27 @@ class _GhsScreenState extends State<GhsScreen> {
   void _goLive() async {
     final ghsProvider = context.read<GhsProvider>();
     if (ghsProvider.currentHymn != null) {
-      await PresentationWindowService.openFullscreenPresentation(
-        context,
-        const GhsPresentationScreen(),
-      );
+      try {
+        await PresentationWindowService.openFullscreenPresentation(
+          context,
+          ghsProvider.currentHymn!,
+        );
+        // Show success message
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Presentation window opened! Use arrow keys to navigate.'),
+              backgroundColor: Color(0xFF03DAC6),
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error opening presentation: $e')),
+          );
+        }
+      }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please select a hymn first')),

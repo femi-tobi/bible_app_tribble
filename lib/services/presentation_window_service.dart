@@ -1,19 +1,21 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:window_manager/window_manager.dart';
+import 'package:desktop_multi_window/desktop_multi_window.dart';
 import 'package:screen_retriever/screen_retriever.dart';
+import 'package:window_manager/window_manager.dart';
 import 'dart:io' show Platform;
+import '../models/hymn.dart';
 
 class PresentationWindowService {
+  static int? _presentationWindowId;
+
   static Future<void> openFullscreenPresentation(
     BuildContext context,
-    Widget presentationWidget,
+    Hymn hymn,
   ) async {
     if (!Platform.isWindows && !Platform.isMacOS && !Platform.isLinux) {
-      // For mobile/web, just navigate normally
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => presentationWidget),
-      );
+      // For mobile/web, fallback to simple navigation
+      print('Multi-window not supported on this platform');
       return;
     }
 
@@ -21,110 +23,88 @@ class PresentationWindowService {
       // Get all available displays
       final screens = await screenRetriever.getAllDisplays();
       
+      print('=== Display Detection ===');
+      print('Total displays found: ${screens.length}');
+      for (int i = 0; i < screens.length; i++) {
+        final screen = screens[i];
+        print('Display $i: ID=${screen.id}, Size=${screen.size.width}x${screen.size.height}');
+      }
+      
       // Find external display (not primary)
       Display? externalDisplay;
       for (final screen in screens) {
         if (screen.id != screens.first.id) {
           externalDisplay = screen;
+          print('Selected external display: ID=${screen.id}');
           break;
         }
       }
 
       // Use external display if available, otherwise use primary
       final targetDisplay = externalDisplay ?? screens.first;
+      if (externalDisplay == null) {
+        print('No external display found, using primary');
+      }
       
-      // Store current window position and size
-      final currentPosition = await windowManager.getPosition();
-      final currentSize = await windowManager.getSize();
-      final wasFullscreen = await windowManager.isFullScreen();
-
-      // Navigate to presentation
-      if (context.mounted) {
-        await Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => _FullscreenWrapper(
-              child: presentationWidget,
-              targetDisplay: targetDisplay,
-              onClose: () async {
-                // Restore original window state
-                await windowManager.setFullScreen(false);
-                await windowManager.setSize(currentSize);
-                await windowManager.setPosition(currentPosition);
-                if (wasFullscreen) {
-                  await windowManager.setFullScreen(true);
-                }
-              },
-            ),
-          ),
-        );
-      }
-    } catch (e) {
-      print('Error opening fullscreen presentation: $e');
-      // Fallback to normal navigation
-      if (context.mounted) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => presentationWidget),
-        );
-      }
-    }
-  }
-}
-
-class _FullscreenWrapper extends StatefulWidget {
-  final Widget child;
-  final Display targetDisplay;
-  final VoidCallback onClose;
-
-  const _FullscreenWrapper({
-    required this.child,
-    required this.targetDisplay,
-    required this.onClose,
-  });
-
-  @override
-  State<_FullscreenWrapper> createState() => _FullscreenWrapperState();
-}
-
-class _FullscreenWrapperState extends State<_FullscreenWrapper> {
-  @override
-  void initState() {
-    super.initState();
-    _setupFullscreen();
-  }
-
-  Future<void> _setupFullscreen() async {
-    try {
-      // Move window to target display
-      final display = widget.targetDisplay;
-      await windowManager.setPosition(
-        Offset(display.visiblePosition!.dx, display.visiblePosition!.dy),
+      // Serialize hymn data to pass to new window
+      final hymnJson = jsonEncode(hymn.toJson());
+      
+      // Create new window for presentation
+      final window = await DesktopMultiWindow.createWindow(hymnJson);
+      _presentationWindowId = window.windowId;
+      
+      // Get window controller
+      final windowController = WindowController.fromWindowId(window.windowId);
+      
+      // Position and size window on target display
+      final rect = Offset(
+        targetDisplay.visiblePosition!.dx,
+        targetDisplay.visiblePosition!.dy,
+      ) & Size(
+        targetDisplay.size.width,
+        targetDisplay.size.height,
       );
       
-      // Set window size to display size
-      await windowManager.setSize(
-        Size(display.size.width, display.size.height),
-      );
+      await windowController.setFrame(rect);
+      await windowController.setTitle('GHS Presentation');
+      await windowController.show();
       
-      // Enter fullscreen
-      await windowManager.setFullScreen(true);
+      print('Presentation window created: ID=${window.windowId}');
+      print('Window positioned at: ${rect.left}, ${rect.top}');
+      print('Window size: ${rect.width} x ${rect.height}');
+      print('========================');
       
-      // Bring to front
-      await windowManager.focus();
     } catch (e) {
-      print('Error setting up fullscreen: $e');
+      print('Error creating presentation window: $e');
+      rethrow;
     }
   }
 
-  @override
-  void dispose() {
-    widget.onClose();
-    super.dispose();
+  static Future<void> sendNavigationCommand(String direction) async {
+    if (_presentationWindowId != null) {
+      try {
+        await DesktopMultiWindow.invokeMethod(
+          _presentationWindowId!,
+          'navigate_slide',
+          direction,
+        );
+      } catch (e) {
+        print('Error sending navigation command: $e');
+      }
+    }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return widget.child;
+  static Future<void> closePresentationWindow() async {
+    if (_presentationWindowId != null) {
+      try {
+        final windowController = WindowController.fromWindowId(_presentationWindowId!);
+        await windowController.close();
+        _presentationWindowId = null;
+      } catch (e) {
+        print('Error closing presentation window: $e');
+      }
+    }
   }
+
+  static bool get isPresentationActive => _presentationWindowId != null;
 }

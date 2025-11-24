@@ -8,10 +8,14 @@ class GhsProvider with ChangeNotifier {
   Hymn? _currentHymn;
   bool _isLoading = false;
   String? _error;
+  int? _presentationWindowId;
+  int _currentSlideIndex = 0;
 
   Hymn? get currentHymn => _currentHymn;
   bool get isLoading => _isLoading;
   String? get error => _error;
+  int? get presentationWindowId => _presentationWindowId;
+  int get currentSlideIndex => _currentSlideIndex;
 
   Future<void> selectHymn(int number) async {
     _isLoading = true;
@@ -44,6 +48,37 @@ class GhsProvider with ChangeNotifier {
   void clearSelection() {
     _currentHymn = null;
     _error = null;
+    notifyListeners();
+  }
+
+  // Set hymn directly without loading (for presentation window)
+  void setCurrentHymnDirect(Hymn hymn) {
+    _currentHymn = hymn;
+    _currentSlideIndex = 0;
+    notifyListeners();
+  }
+
+  // Track presentation window
+  void setPresentationWindowId(int? windowId) {
+    _presentationWindowId = windowId;
+    notifyListeners();
+  }
+
+  // Slide navigation
+  void nextSlide() {
+    _currentSlideIndex++;
+    notifyListeners();
+  }
+
+  void previousSlide() {
+    if (_currentSlideIndex > 0) {
+      _currentSlideIndex--;
+      notifyListeners();
+    }
+  }
+
+  void setSlideIndex(int index) {
+    _currentSlideIndex = index;
     notifyListeners();
   }
 }
