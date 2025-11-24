@@ -14,44 +14,56 @@ class PresentationWindowService {
     BuildContext context,
     Hymn hymn,
   ) async {
-    if (!Platform.isWindows && !Platform.isMacOS && !Platform.isLinux) {
-      // For mobile/web, fallback to simple navigation
-      print('Multi-window not supported on this platform');
-      return;
+    await _createWindow(context, hymn.toJson(), 'hymn');
+  }
+
+  static Future<void> openBiblePresentation(
+    BuildContext context,
+    Map<String, dynamic> verseData,
+  ) async {
+    await _createWindow(context, verseData, 'bible');
+  }
+
+  static Future<void> _createWindow(
+    BuildContext context,
+    dynamic data,
+    String type,
+  ) async {
+    // Get available displays
+    final displays = await ScreenRetriever.instance.getAllDisplays();
+    
+    // Find external display (usually the second one)
+    Display? targetDisplay;
+    if (displays.length > 1) {
+      targetDisplay = displays[1]; // Use second display
+    } else {
+      targetDisplay = displays[0]; // Fallback to primary
+    }
+    
+    print('=== Display Detection ===');
+    print('Total displays found: ${displays.length}');
+    for (int i = 0; i < displays.length; i++) {
+      print('Display $i: ID=${displays[i].id}, Size=${displays[i].size.width}x${displays[i].size.height}');
+    }
+    print('Selected external display: ID=${targetDisplay.id}');
+
+    // Close existing window if open
+    if (_presentationWindowId != null) {
+      try {
+        await WindowController.fromWindowId(_presentationWindowId!).close();
+      } catch (e) {
+        print('Error closing existing window: $e');
+      }
     }
 
     try {
-      // Get all available displays
-      final screens = await screenRetriever.getAllDisplays();
-      
-      print('=== Display Detection ===');
-      print('Total displays found: ${screens.length}');
-      for (int i = 0; i < screens.length; i++) {
-        final screen = screens[i];
-        print('Display $i: ID=${screen.id}, Size=${screen.size.width}x${screen.size.height}');
-      }
-      
-      // Find external display (not primary)
-      Display? externalDisplay;
-      for (final screen in screens) {
-        if (screen.id != screens.first.id) {
-          externalDisplay = screen;
-          print('Selected external display: ID=${screen.id}');
-          break;
-        }
-      }
-
-      // Use external display if available, otherwise use primary
-      final targetDisplay = externalDisplay ?? screens.first;
-      if (externalDisplay == null) {
-        print('No external display found, using primary');
-      }
-      
-      // Serialize hymn data to pass to new window
-      final hymnJson = jsonEncode(hymn.toJson());
-      
       // Create new window for presentation
-      final window = await DesktopMultiWindow.createWindow(hymnJson);
+      // Pass type as first arg, data as second
+      // desktop_multi_window passes: ['multi_window', windowId, args...]
+      final window = await DesktopMultiWindow.createWindow(jsonEncode({
+        'type': type,
+        'data': data,
+      }));
       _presentationWindowId = window.windowId;
       
       // Get window controller
@@ -78,7 +90,7 @@ class PresentationWindowService {
       
       // Configure window for fullscreen presentation
       await windowController.setFrame(rect);
-      await windowController.setTitle('GHS Presentation');
+      await windowController.setTitle(type == 'hymn' ? 'GHS Presentation' : 'Bible Presentation');
       await windowController.show();
       
       print('Presentation window created: ID=${window.windowId}');
@@ -88,7 +100,9 @@ class PresentationWindowService {
       
     } catch (e) {
       print('Error creating presentation window: $e');
-      rethrow;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to open presentation window: $e')),
+      );
     }
   }
 

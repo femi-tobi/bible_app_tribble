@@ -1,11 +1,14 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:desktop_multi_window/desktop_multi_window.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'providers/ghs_provider.dart';
 import 'screens/ghs_presentation_screen.dart';
+import 'screens/bible_presentation_screen.dart';
 import 'models/hymn.dart';
+import 'services/windows_window_service.dart';
 
 /// Entry point for the presentation window
 /// This runs in a separate Flutter engine instance
@@ -18,6 +21,23 @@ void main(List<String> args) async {
   print('Presentation window starting with ${args.length} args');
   for (int i = 0; i < args.length; i++) {
     print('Arg $i: ${args[i].substring(0, args[i].length > 100 ? 100 : args[i].length)}...');
+  }
+  
+  // Apply native frameless style on Windows
+  if (Platform.isWindows) {
+    // Add a delay to ensure window is fully created and style isn't overridden
+    // Retry a few times to be sure
+    for (int i = 1; i <= 3; i++) {
+      Future.delayed(Duration(milliseconds: 300 * i), () {
+        try {
+          print('Attempting to apply frameless style (Attempt $i)...');
+          // On Windows, the windowId from desktop_multi_window is the HWND
+          WindowsWindowService.makeWindowFrameless(windowId);
+        } catch (e) {
+          print('Error applying frameless style: $e');
+        }
+      });
+    }
   }
   
   DesktopMultiWindow.setMethodHandler((call, fromWindowId) async {
@@ -44,62 +64,54 @@ class PresentationWindowApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Parse hymn data from arguments
-    Hymn? hymn;
+    // Parse arguments
+    // Format: ['multi_window', windowId, jsonString]
+    // jsonString structure: { 'type': 'hymn'|'bible', 'data': ... }
+    
+    String type = 'hymn';
+    dynamic data;
+    
     if (args.length > 1) {
       try {
-        print('Parsing hymn from args[1]: ${args[1].substring(0, 50)}...');
-        final hymnJson = jsonDecode(args[1]);
-        hymn = Hymn.fromJson(hymnJson);
-        print('Successfully parsed hymn: ${hymn.title}');
+        final jsonStr = args[1];
+        print('Parsing args[1]: ${jsonStr.substring(0, jsonStr.length > 50 ? 50 : jsonStr.length)}...');
+        
+        // Try to parse as the new format wrapper
+        final parsed = jsonDecode(jsonStr);
+        
+        if (parsed is Map && parsed.containsKey('type') && parsed.containsKey('data')) {
+          type = parsed['type'];
+          data = parsed['data'];
+          print('Detected presentation type: $type');
+        } else {
+          // Legacy format (direct hymn JSON)
+          print('Legacy format detected, assuming hymn');
+          type = 'hymn';
+          data = parsed;
+        }
       } catch (e) {
-        print('Error parsing hymn data: $e');
-        print('Args length: ${args.length}');
-        if (args.length > 1) {
-          print('Args[1] preview: ${args[1].substring(0, args[1].length > 200 ? 200 : args[1].length)}');
-        }
+        print('Error parsing arguments: $e');
       }
-    } else {
-      print('No hymn data in args - args.length = ${args.length}');
     }
 
-    // Show error if no hymn
-    if (hymn == null) {
-      return MaterialApp(
-        home: Scaffold(
-          backgroundColor: Colors.black,
-          body: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.error_outline, color: Colors.red, size: 64),
-                const SizedBox(height: 20),
-                const Text(
-                  'No hymn data received',
-                  style: TextStyle(color: Colors.white, fontSize: 24),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  'Args: ${args.length}',
-                  style: const TextStyle(color: Colors.white70, fontSize: 16),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-
-    return ChangeNotifierProvider(
-      create: (_) {
-        final provider = GhsProvider();
-        if (hymn != null) {
-          provider.setCurrentHymnDirect(hymn);
-        }
-        return provider;
-      },
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) {
+          final provider = GhsProvider();
+          if (type == 'hymn' && data != null) {
+            try {
+              final hymn = Hymn.fromJson(data);
+              provider.setCurrentHymnDirect(hymn);
+            } catch (e) {
+              print('Error setting hymn data: $e');
+            }
+          }
+          return provider;
+        }),
+        // Add BibleProvider if needed, or pass data directly to screen
+      ],
       child: MaterialApp(
-        title: 'GHS Presentation',
+        title: type == 'hymn' ? 'GHS Presentation' : 'Bible Presentation',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           brightness: Brightness.dark,
@@ -120,7 +132,9 @@ class PresentationWindowApp extends StatelessWidget {
         ),
         home: PresentationWindowListener(
           windowId: windowId,
-          child: const GhsPresentationScreen(),
+          child: type == 'hymn' 
+              ? const GhsPresentationScreen()
+              : BiblePresentationScreen(data: data),
         ),
       ),
     );

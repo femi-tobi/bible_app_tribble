@@ -88,15 +88,24 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+import '../services/presentation_window_service.dart';
+
   void _goLive() {
     final bibleProvider = context.read<BibleProvider>();
-    if (bibleProvider.currentResponse != null) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => const PresentationScreen(),
-        ),
+    if (bibleProvider.currentResponse != null && _selectedBook != null && _selectedChapter != null) {
+      final verse = bibleProvider.currentChapterVerses.firstWhere(
+        (v) => v.verse == bibleProvider.currentResponse!.verses.first.verse,
+        orElse: () => bibleProvider.currentChapterVerses.first,
       );
+      
+      final verseData = {
+        'book': _selectedBook!.name,
+        'chapter': _selectedChapter, // _selectedChapter is already an int
+        'verse': verse.verse,
+        'text': verse.text,
+      };
+      
+      PresentationWindowService.openBiblePresentation(context, verseData);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please select a verse first')),
