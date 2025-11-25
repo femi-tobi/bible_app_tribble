@@ -6,6 +6,7 @@ import 'package:window_manager/window_manager.dart';
 import 'dart:convert';
 import 'providers/bible_provider.dart';
 import 'providers/ghs_provider.dart';
+import 'providers/presentation_config_provider.dart';
 import 'screens/home_screen.dart';
 import 'screens/ghs_presentation_screen.dart';
 import 'screens/bible_presentation_screen.dart';
@@ -13,6 +14,10 @@ import 'models/hymn.dart';
 
 void main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Load presentation config
+  final configProvider = PresentationConfigProvider();
+  await configProvider.load();
   
   print('=== FLUTTER APP STARTING ===');
   print('Total args: ${args.length}');
