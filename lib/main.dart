@@ -8,6 +8,7 @@ import 'providers/bible_provider.dart';
 import 'providers/ghs_provider.dart';
 import 'screens/home_screen.dart';
 import 'screens/ghs_presentation_screen.dart';
+import 'screens/bible_presentation_screen.dart';
 import 'models/hymn.dart';
 
 void main(List<String> args) async {
@@ -52,26 +53,35 @@ void main(List<String> args) async {
       // Parse data from third argument (args[2])
       // The data is wrapped as: {"type":"hymn|bible","data":{...}}
       Hymn? hymn;
+      Map<String, dynamic>? bibleData;
+      String presentationType = '';
+      
       if (args.length > 2) {
         try {
           final wrappedData = jsonDecode(args[2]);
           final type = wrappedData['type'];
           final data = wrappedData['data'];
+          presentationType = type ?? '';
           
           if (type == 'hymn' && data != null) {
             hymn = Hymn.fromJson(data);
             print('✓ Hymn loaded: ${hymn.title}');
-          } else if (type == 'bible') {
-            print('Bible presentation detected (not yet implemented in sub-window)');
+          } else if (type == 'bible' && data != null) {
+            bibleData = Map<String, dynamic>.from(data);
+            print('✓ Bible verse loaded: ${bibleData['book']} ${bibleData['chapter']}:${bibleData['verse']}');
           }
         } catch (e) {
           print('✗ Error parsing presentation data: $e');
         }
       }
       
-      print('Launching presentation window with hymn: ${hymn?.title ?? "NULL"}');
+      print('Launching $presentationType presentation window');
       
-      runApp(_createPresentationWindow(windowId, hymn));
+      if (presentationType == 'hymn') {
+        runApp(_createHymnPresentationWindow(windowId, hymn));
+      } else if (presentationType == 'bible') {
+        runApp(_createBiblePresentationWindow(windowId, bibleData));
+      }
       return;
     }
   }
@@ -81,8 +91,8 @@ void main(List<String> args) async {
   runApp(const BibleApp());
 }
 
-// Create presentation window app
-Widget _createPresentationWindow(int windowId, Hymn? hymn) {
+// Create hymn presentation window app
+Widget _createHymnPresentationWindow(int windowId, Hymn? hymn) {
   return ChangeNotifierProvider(
     create: (_) {
       final provider = GhsProvider();
@@ -113,6 +123,32 @@ Widget _createPresentationWindow(int windowId, Hymn? hymn) {
       ),
       home: const GhsPresentationScreen(),
     ),
+  );
+}
+
+// Create Bible presentation window app
+Widget _createBiblePresentationWindow(int windowId, Map<String, dynamic>? verseData) {
+  return MaterialApp(
+    title: 'Bible Presentation',
+    debugShowCheckedModeBanner: false,
+    theme: ThemeData(
+      brightness: Brightness.dark,
+      primaryColor: const Color(0xFF1E1E1E),
+      scaffoldBackgroundColor: const Color(0xFF121212),
+      textTheme: GoogleFonts.interTextTheme(
+        ThemeData.dark().textTheme,
+      ).apply(
+        bodyColor: Colors.white,
+        displayColor: Colors.white,
+      ),
+      colorScheme: const ColorScheme.dark(
+        primary: Color(0xFF6C63FF),
+        secondary: Color(0xFF03DAC6),
+        surface: Color(0xFF1E1E1E),
+      ),
+      useMaterial3: true,
+    ),
+    home: BiblePresentationScreen(data: verseData),
   );
 }
 

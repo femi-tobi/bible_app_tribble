@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:desktop_multi_window/desktop_multi_window.dart';
+import 'package:animate_do/animate_do.dart';
 import '../providers/ghs_provider.dart';
 
 class GhsPresentationScreen extends StatefulWidget {
@@ -121,11 +122,6 @@ class _GhsPresentationScreenState extends State<GhsPresentationScreen> {
     final hymn = ghsProvider.currentHymn;
 
     if (hymn == null || _slides.isEmpty) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          Navigator.pop(context);
-        }
-      });
       return const Scaffold(
         backgroundColor: Colors.black,
         body: Center(
@@ -169,44 +165,69 @@ class _GhsPresentationScreenState extends State<GhsPresentationScreen> {
                 Center(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 80, vertical: 60),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // Section Label
-                        Text(
-                          currentSlide.label,
-                          style: const TextStyle(
-                            color: Color(0xFF03DAC6),
-                            fontSize: 48,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 2,
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 400),
+                      transitionBuilder: (child, animation) {
+                        return FadeTransition(
+                          opacity: animation,
+                          child: SlideTransition(
+                            position: Tween<Offset>(
+                              begin: const Offset(0.1, 0),
+                              end: Offset.zero,
+                            ).animate(CurvedAnimation(
+                              parent: animation,
+                              curve: Curves.easeOutCubic,
+                            )),
+                            child: child,
                           ),
-                        ),
-                        const SizedBox(height: 40),
-                        // Content - Maximum 2 lines
-                        Flexible(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: currentSlide.lines.map((line) => Flexible(
-                              child: Padding(
-                                padding: const EdgeInsets.only(bottom: 20),
-                                child: Text(
-                                  line,
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: currentSlide.isTitle ? 64 : 72,
-                                    fontWeight: FontWeight.bold,
-                                    height: 1.3,
-                                    letterSpacing: 1,
-                                  ),
-                                ),
+                        );
+                      },
+                      child: Column(
+                        key: ValueKey(_currentSlideIndex),
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Section Label
+                          FadeInDown(
+                            duration: const Duration(milliseconds: 600),
+                            child: Text(
+                              currentSlide.label,
+                              style: const TextStyle(
+                                color: Color(0xFF03DAC6),
+                                fontSize: 48,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 2,
                               ),
-                            )).toList(),
+                            ),
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 40),
+                          // Content - Maximum 2 lines
+                          Flexible(
+                            child: FadeInUp(
+                              duration: const Duration(milliseconds: 800),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: currentSlide.lines.map((line) => Flexible(
+                                  child: Padding(
+                                    padding: const EdgeInsets.only(bottom: 20),
+                                    child: Text(
+                                      line,
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: currentSlide.isTitle ? 64 : 72,
+                                        fontWeight: FontWeight.bold,
+                                        height: 1.3,
+                                        letterSpacing: 1,
+                                      ),
+                                    ),
+                                  ),
+                                )).toList(),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),

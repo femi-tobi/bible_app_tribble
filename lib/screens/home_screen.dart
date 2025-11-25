@@ -69,10 +69,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final query = '${_selectedBook!.name} $_selectedChapter:$verse';
     _searchController.text = query;
     _handleSearch();
-    setState(() {
-      _selectedBook = null;
-      _selectedChapter = null;
-    });
+    // Keep _selectedBook and _selectedChapter so Go Live can access them
   }
 
   void _toggleListening() {
@@ -93,17 +90,16 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _goLive() {
     final bibleProvider = context.read<BibleProvider>();
-    if (bibleProvider.currentResponse != null && _selectedBook != null && _selectedChapter != null) {
-      final verse = bibleProvider.currentChapterVerses.firstWhere(
-        (v) => v.verse == bibleProvider.currentResponse!.verses.first.verse,
-        orElse: () => bibleProvider.currentChapterVerses.first,
-      );
+    if (bibleProvider.currentResponse != null) {
+      // Extract data from currentResponse
+      final response = bibleProvider.currentResponse!;
+      final firstVerse = response.verses.first;
       
       final verseData = {
-        'book': _selectedBook!.name,
-        'chapter': _selectedChapter, // _selectedChapter is already an int
-        'verse': verse.verse,
-        'text': verse.text,
+        'book': firstVerse.bookName,  // Use bookName from Verse object
+        'chapter': firstVerse.chapter,
+        'verse': firstVerse.verse,
+        'text': firstVerse.text,
       };
       
       PresentationWindowService.openBiblePresentation(context, verseData);

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:desktop_multi_window/desktop_multi_window.dart';
+import 'package:animate_do/animate_do.dart';
 
 class BiblePresentationScreen extends StatefulWidget {
   final dynamic data;
@@ -24,6 +26,7 @@ class _BiblePresentationScreenState extends State<BiblePresentationScreen> {
   void initState() {
     super.initState();
     _parseData();
+    _setupMessageHandler();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       FocusScope.of(context).requestFocus(_focusNode);
     });
@@ -37,6 +40,20 @@ class _BiblePresentationScreenState extends State<BiblePresentationScreen> {
       _verse = map['verse'] ?? 0;
       _text = map['text'] ?? '';
     }
+  }
+
+  void _setupMessageHandler() {
+    DesktopMultiWindow.setMethodHandler((call, fromWindowId) async {
+      if (call.method == 'navigate_slide') {
+        final direction = call.arguments as String;
+        if (direction == 'next') {
+          // Navigation handled by main app's BibleProvider
+        } else if (direction == 'previous') {
+          // Navigation handled by main app's BibleProvider
+        }
+      }
+      return null;
+    });
   }
 
   @override
@@ -59,7 +76,7 @@ class _BiblePresentationScreenState extends State<BiblePresentationScreen> {
     return CallbackShortcuts(
       bindings: {
         const SingleActivator(LogicalKeyboardKey.escape): () {
-          // Close window logic handled by OS/Service
+          // Close handled by main app
         },
       },
       child: Focus(
@@ -67,56 +84,47 @@ class _BiblePresentationScreenState extends State<BiblePresentationScreen> {
         autofocus: true,
         child: Scaffold(
           backgroundColor: Colors.black,
-          body: Stack(
-            children: [
-              // Main Content
-              Center(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 80, vertical: 60),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Reference Label
-                      Text(
-                        '$_bookName $_chapter:$_verse',
-                        style: const TextStyle(
-                          color: Color(0xFF03DAC6),
-                          fontSize: 48,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 2,
-                        ),
+          body: Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 80, vertical: 60),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Reference Label
+                  FadeInDown(
+                    duration: const Duration(milliseconds: 600),
+                    child: Text(
+                      '$_bookName $_chapter:$_verse',
+                      style: const TextStyle(
+                        color: Color(0xFF03DAC6),
+                        fontSize: 48,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 2,
                       ),
-                      const SizedBox(height: 40),
-                      // Verse Text
-                      Flexible(
-                        child: Text(
-                          _text,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 72,
-                            fontWeight: FontWeight.bold,
-                            height: 1.3,
-                            letterSpacing: 1,
-                          ),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 40),
+                  // Verse Text
+                  Flexible(
+                    child: FadeInUp(
+                      duration: const Duration(milliseconds: 800),
+                      child: Text(
+                        _text,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 72,
+                          fontWeight: FontWeight.bold,
+                          height: 1.3,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              // Close Button
-              Positioned(
-                top: 30,
-                right: 30,
-                child: IconButton(
-                  icon: const Icon(Icons.close, color: Colors.white54, size: 36),
-                  onPressed: () => Navigator.pop(context), // This might not close the window directly
-                  tooltip: 'Close Presentation',
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
