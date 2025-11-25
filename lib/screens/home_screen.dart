@@ -26,6 +26,8 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isListening = false;
   BibleBook? _selectedBook;
   int? _selectedChapter;
+  double _previewHeight = 120.0; // Adjustable preview height
+
 
   @override
   void initState() {
@@ -127,10 +129,32 @@ class _HomeScreenState extends State<HomeScreen> {
           }
         },
         const SingleActivator(LogicalKeyboardKey.arrowRight): () {
-          context.read<BibleProvider>().nextVerse();
+          final provider = context.read<BibleProvider>();
+          provider.nextVerse();
+          // Send updated verse to presentation window if active
+          if (PresentationWindowService.isPresentationActive && provider.currentResponse != null) {
+            final firstVerse = provider.currentResponse!.verses.first;
+            PresentationWindowService.updateBibleVerse({
+              'book': firstVerse.bookName,
+              'chapter': firstVerse.chapter,
+              'verse': firstVerse.verse,
+              'text': firstVerse.text,
+            });
+          }
         },
         const SingleActivator(LogicalKeyboardKey.arrowLeft): () {
-          context.read<BibleProvider>().previousVerse();
+          final provider = context.read<BibleProvider>();
+          provider.previousVerse();
+          // Send updated verse to presentation window if active
+          if (PresentationWindowService.isPresentationActive && provider.currentResponse != null) {
+            final firstVerse = provider.currentResponse!.verses.first;
+            PresentationWindowService.updateBibleVerse({
+              'book': firstVerse.bookName,
+              'chapter': firstVerse.chapter,
+              'verse': firstVerse.verse,
+              'text': firstVerse.text,
+            });
+          }
         },
       },
       child: Focus(
@@ -268,6 +292,111 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   child: Column(
                     children: [
+                      // Presentation Preview
+                      if (bibleProvider.currentResponse != null)
+                        Column(
+                          children: [
+                            Container(
+                              margin: const EdgeInsets.all(8),
+                              height: _previewHeight,
+                              decoration: BoxDecoration(
+                                color: Colors.black,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: const Color(0xFF03DAC6).withValues(alpha: 0.3)),
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Stack(
+                                  children: [
+                                    // Preview content
+                                    Center(
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(12),
+                                        child: Column(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Text(
+                                              bibleProvider.currentResponse!.reference,
+                                              style: const TextStyle(
+                                                color: Color(0xFF03DAC6),
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                              textAlign: TextAlign.center,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Flexible(
+                                              child: Text(
+                                                bibleProvider.currentResponse!.text,
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 8,
+                                                  height: 1.2,
+                                                ),
+                                                textAlign: TextAlign.center,
+                                                maxLines: 4,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                    // "LIVE" indicator if presentation is active
+                                    if (PresentationWindowService.isPresentationActive)
+                                      Positioned(
+                                        top: 4,
+                                        right: 4,
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: Colors.red,
+                                            borderRadius: BorderRadius.circular(4),
+                                          ),
+                                          child: const Text(
+                                            'LIVE',
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 8,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            // Resize slider
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 8),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.photo_size_select_small, size: 12, color: Colors.white30),
+                                  Expanded(
+                                    child: Slider(
+                                      value: _previewHeight,
+                                      min: 80,
+                                      max: 300,
+                                      divisions: 22,
+                                      activeColor: const Color(0xFF03DAC6),
+                                      inactiveColor: Colors.white12,
+                                      onChanged: (value) {
+                                        setState(() {
+                                          _previewHeight = value;
+                                        });
+                                      },
+                                    ),
+                                  ),
+                                  const Icon(Icons.photo_size_select_large, size: 16, color: Colors.white30),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
                       // Header
                       Container(
                         padding: const EdgeInsets.all(12),

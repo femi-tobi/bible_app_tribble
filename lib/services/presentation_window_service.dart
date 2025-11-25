@@ -131,14 +131,30 @@ class PresentationWindowService {
     }
   }
 
+  static Future<void> updateBibleVerse(Map<String, dynamic> verseData) async {
+    if (_presentationWindowId != null) {
+      try {
+        await DesktopMultiWindow.invokeMethod(
+          _presentationWindowId!,
+          'update_verse',
+          verseData,
+        );
+      } catch (e) {
+        print('Error updating Bible verse: $e');
+      }
+    }
+  }
+
   static Future<void> closePresentationWindow() async {
     if (_presentationWindowId != null) {
       try {
         final windowController = WindowController.fromWindowId(_presentationWindowId!);
         await windowController.close();
-        _presentationWindowId = null;
       } catch (e) {
         print('Error closing presentation window: $e');
+      } finally {
+        // Always reset window ID, even if close fails
+        _presentationWindowId = null;
       }
     }
   }
