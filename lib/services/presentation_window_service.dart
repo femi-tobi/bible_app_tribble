@@ -93,9 +93,20 @@ class PresentationWindowService {
       await windowController.setTitle(type == 'hymn' ? 'GHS Presentation' : 'Bible Presentation');
       await windowController.show();
       
+      // Apply native fullscreen on Windows (after window is shown)
+      if (Platform.isWindows) {
+        try {
+          // Use native Windows API to make it truly fullscreen
+          await WindowsWindowService.makeWindowFullscreen(window.windowId);
+        } catch (e) {
+          print('Error applying fullscreen: $e');
+        }
+      }
+      
       print('Presentation window created: ID=${window.windowId}');
       print('Window positioned at: ${rect.left}, ${rect.top}');
       print('Window size: ${rect.width} x ${rect.height}');
+      print('Fullscreen mode: ENABLED');
       print('========================');
       
     } catch (e) {

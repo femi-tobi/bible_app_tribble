@@ -9,6 +9,7 @@ import '../widgets/chapter_grid.dart';
 import '../widgets/verse_grid.dart';
 import 'presentation_screen.dart';
 import 'ghs_screen.dart';
+import '../services/presentation_window_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});

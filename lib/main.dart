@@ -33,21 +33,43 @@ void main(List<String> args) async {
       print('Window ID: $windowId');
       print('Args count: ${args.length}');
       
-      // Parse hymn data from third argument (args[2])
+      // Parse data from third argument (args[2])
+      // The data is wrapped as: {"type":"hymn|bible","data":{...}}
       Hymn? hymn;
       if (args.length > 2) {
         try {
           final jsonPreview = args[2].length > 100 ? args[2].substring(0, 100) : args[2];
-          print('Hymn JSON preview: $jsonPreview...');
-          final hymnJson = jsonDecode(args[2]);
-          hymn = Hymn.fromJson(hymnJson);
-          print('✓ Hymn parsed successfully: ${hymn.title}');
+          print('JSON preview: $jsonPreview...');
+          
+          print('=== PARSING JSON ===');
+          print('Raw args[2]: ${args[2]}');
+          
+          final wrappedData = jsonDecode(args[2]);
+          print('Decoded wrappedData: $wrappedData');
+          print('wrappedData type: ${wrappedData.runtimeType}');
+          
+          final type = wrappedData['type'];
+          final data = wrappedData['data'];
+          
+          print('Presentation type: $type');
+          print('Data: $data');
+          print('Data type: ${data.runtimeType}');
+          
+          if (type == 'hymn' && data != null) {
+            print('Attempting to parse hymn from data...');
+            hymn = Hymn.fromJson(data);
+            print('✓ Hymn parsed successfully: ${hymn.title}');
+          } else if (type == 'bible') {
+            print('Bible presentation detected (not yet implemented in sub-window)');
+          } else {
+            print('✗ Unknown type or null data: type=$type, data=$data');
+          }
         } catch (e, stackTrace) {
-          print('✗ Error parsing hymn data: $e');
+          print('✗ Error parsing presentation data: $e');
           print('Stack trace: $stackTrace');
         }
       } else {
-        print('✗ WARNING: No hymn data in args!');
+        print('✗ WARNING: No presentation data in args!');
       }
       
       print('Launching presentation window with hymn: ${hymn?.title ?? "NULL"}');

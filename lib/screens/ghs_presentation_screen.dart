@@ -105,8 +105,20 @@ class _GhsPresentationScreenState extends State<GhsPresentationScreen> {
     final hymn = ghsProvider.currentHymn;
 
     if (hymn == null || _slides.isEmpty) {
-      Navigator.pop(context);
-      return const SizedBox();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          Navigator.pop(context);
+        }
+      });
+      return const Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(
+          child: Text(
+            'No hymn data',
+            style: TextStyle(color: Colors.white54, fontSize: 24),
+          ),
+        ),
+      );
     }
 
     final currentSlide = _slides[_currentSlideIndex];
