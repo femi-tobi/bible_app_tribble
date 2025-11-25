@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/presentation_config.dart';
 
+import '../services/presentation_window_service.dart';
+
 class PresentationConfigProvider with ChangeNotifier {
   PresentationConfig _config = PresentationConfig();
 
@@ -20,6 +22,8 @@ class PresentationConfigProvider with ChangeNotifier {
   Future<void> _save() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('presentationConfig', jsonEncode(_config.toMap()));
+    // Send updated config to presentation window
+    PresentationWindowService.sendConfig(_config.toMap());
   }
 
   void setScale(double v) {

@@ -1,14 +1,3 @@
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
-import '../providers/bible_provider.dart';
-import '../services/speech_service.dart';
-import '../constants/bible_data.dart';
-import '../widgets/book_grid_item.dart';
-import '../widgets/chapter_grid.dart';
-import '../widgets/verse_grid.dart';
-import 'presentation_screen.dart';
-import 'ghs_screen.dart';
 import '../services/presentation_window_service.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -397,24 +386,6 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ],
                         ),
-                      // Header
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        width: double.infinity,
-                        color: const Color(0xFF2C2C2C),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                const Text(
-                                  'Preview',
-                                  style: TextStyle(
-                                    color: Colors.white54,
-                                    fontWeight: FontWeight.bold,
-                                    letterSpacing: 1,
-                                    fontSize: 11,
                                   ),
                                 ),
                                 Row(

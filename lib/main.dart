@@ -156,25 +156,6 @@ Widget _createBiblePresentationWindow(int windowId, Map<String, dynamic>? verseD
     home: BiblePresentationScreen(data: verseData),
   );
 }
-
-class BibleApp extends StatelessWidget {
-  const BibleApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => BibleProvider()),
-        ChangeNotifierProvider(create: (_) => GhsProvider()),
-      ],
-      child: MaterialApp(
-        title: 'Church Bible Presenter',
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          brightness: Brightness.dark,
-          primaryColor: const Color(0xFF1E1E1E),
-          scaffoldBackgroundColor: const Color(0xFF121212),
-          textTheme: GoogleFonts.interTextTheme(
             Theme.of(context).textTheme,
           ).apply(
             bodyColor: Colors.white,

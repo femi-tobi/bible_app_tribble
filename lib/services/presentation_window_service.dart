@@ -145,6 +145,20 @@ class PresentationWindowService {
     }
   }
 
+  static Future<void> sendConfig(Map<String, dynamic> config) async {
+    if (_presentationWindowId != null) {
+      try {
+        await DesktopMultiWindow.invokeMethod(
+          _presentationWindowId!,
+          'init_config',
+          config,
+        );
+      } catch (e) {
+        print('Error sending config: $e');
+      }
+    }
+  }
+
   static Future<void> closePresentationWindow() async {
     if (_presentationWindowId != null) {
       try {

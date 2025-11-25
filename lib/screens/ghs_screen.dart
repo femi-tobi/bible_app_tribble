@@ -1,12 +1,3 @@
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
-import '../providers/ghs_provider.dart';
-import '../services/presentation_window_service.dart';
-import 'ghs_presentation_screen.dart';
-
-class GhsScreen extends StatefulWidget {
-  const GhsScreen({super.key});
 
   @override
   State<GhsScreen> createState() => _GhsScreenState();
@@ -344,17 +335,6 @@ class _GhsScreenState extends State<GhsScreen> {
                         width: double.infinity,
                         color: const Color(0xFF2C2C2C),
                         child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text(
-                              'Preview',
-                              style: TextStyle(
-                                color: Colors.white54,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 1,
-                              ),
-                            ),
-                            Row(
                               children: [
                                 _ShortcutBadge(label: 'R'),
                                 const SizedBox(width: 4),
