@@ -64,20 +64,9 @@ class PresentationWindowService {
         'type': type,
         'data': data,
       }));
-      _presentationWindowId = window.windowId;
       
       // Get window controller
       final windowController = WindowController.fromWindowId(window.windowId);
-      
-      // Apply native frameless style on Windows
-      if (Platform.isWindows) {
-        try {
-          // On Windows, the windowId from desktop_multi_window is the HWND
-          WindowsWindowService.makeWindowFrameless(window.windowId);
-        } catch (e) {
-          print('Error applying frameless style: $e');
-        }
-      }
       
       // Position and size window on target display
       final rect = Offset(
@@ -88,25 +77,33 @@ class PresentationWindowService {
         targetDisplay.size.height,
       );
       
-      // Configure window for fullscreen presentation
+      // Configure window for presentation
       await windowController.setFrame(rect);
       await windowController.setTitle(type == 'hymn' ? 'GHS Presentation' : 'Bible Presentation');
       await windowController.show();
       
-      // Apply native fullscreen on Windows (after window is shown)
+      // Apply fullscreen on Windows to cover taskbar (includes making frameless)
+      // Apply fullscreen on Windows to cover taskbar (includes making frameless)
+      // NOTE: We now handle this inside the secondary window's main() using window_manager
+      /*
       if (Platform.isWindows) {
         try {
-          // Use native Windows API to make it truly fullscreen
-          await WindowsWindowService.makeWindowFullscreen(window.windowId);
+          await WindowsWindowService.makeWindowFullscreen(
+            window.windowId,
+            rect.left.toInt(),
+            rect.top.toInt(),
+            rect.width.toInt(),
+            rect.height.toInt(),
+          );
         } catch (e) {
           print('Error applying fullscreen: $e');
         }
       }
+      */
       
       print('Presentation window created: ID=${window.windowId}');
       print('Window positioned at: ${rect.left}, ${rect.top}');
       print('Window size: ${rect.width} x ${rect.height}');
-      print('Fullscreen mode: ENABLED');
       print('========================');
       
     } catch (e) {

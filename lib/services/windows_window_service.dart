@@ -4,97 +4,121 @@ import 'package:win32/win32.dart';
 
 class WindowsWindowService {
   /// Makes a window frameless by removing the title bar and borders.
+  /// Uses WS_POPUP style which allows the window to cover the taskbar.
   /// [windowId] is expected to be the HWND of the window.
   static void makeWindowFrameless(int windowId) {
     final hwnd = windowId;
-    print('WindowsWindowService: Attempting to make window frameless. HWND: $hwnd');
+    print('WindowsWindowService: Making window frameless. HWND: $hwnd');
 
     try {
-      // Get current window style
-      final style = GetWindowLongPtr(hwnd, WINDOW_LONG_PTR_INDEX.GWL_STYLE);
-      print('WindowsWindowService: Current style: ${style.toRadixString(16)}');
+      // Get current style
+      final currentStyle = GetWindowLongPtr(hwnd, WINDOW_LONG_PTR_INDEX.GWL_STYLE);
+      print('Current style: 0x${currentStyle.toRadixString(16)}');
       
-      // Remove caption, thick frame (resize border), and system menu
-      final newStyle = style & ~(WINDOW_STYLE.WS_CAPTION | WINDOW_STYLE.WS_THICKFRAME | WINDOW_STYLE.WS_SYSMENU);
-      print('WindowsWindowService: New style: ${newStyle.toRadixString(16)}');
+      // Remove WS_CAPTION, WS_THICKFRAME, WS_SYSMENU, WS_MINIMIZEBOX, WS_MAXIMIZEBOX
+      // Keep only WS_VISIBLE and WS_POPUP
+      final newStyle = (WINDOW_STYLE.WS_VISIBLE | WINDOW_STYLE.WS_POPUP);
       
-      // Apply new style
+      print('Setting new style: 0x${newStyle.toRadixString(16)}');
       final result = SetWindowLongPtr(hwnd, WINDOW_LONG_PTR_INDEX.GWL_STYLE, newStyle);
-      if (result == 0) {
-        print('WindowsWindowService: Warning - SetWindowLongPtr returned 0 (might be error or previous value was 0)');
-      }
+      print('SetWindowLongPtr result: $result');
       
-      // Force window to redraw and apply changes
+      // Remove all extended styles
+      SetWindowLongPtr(hwnd, WINDOW_LONG_PTR_INDEX.GWL_EXSTYLE, 0);
+      
+      // Force redraw
       SetWindowPos(
         hwnd, 
-        NULL, 
+        HWND_TOPMOST,
         0, 0, 0, 0, 
         SET_WINDOW_POS_FLAGS.SWP_FRAMECHANGED | 
         SET_WINDOW_POS_FLAGS.SWP_NOMOVE | 
-        SET_WINDOW_POS_FLAGS.SWP_NOSIZE | 
-        SET_WINDOW_POS_FLAGS.SWP_NOZORDER | 
-        SET_WINDOW_POS_FLAGS.SWP_NOACTIVATE
+        SET_WINDOW_POS_FLAGS.SWP_NOSIZE |
+        SET_WINDOW_POS_FLAGS.SWP_SHOWWINDOW
       );
       
-      print('WindowsWindowService: Applied frameless style to window HWND: $hwnd');
+      print('✓ Frameless style applied');
     } catch (e) {
       print('WindowsWindowService: Error applying style: $e');
     }
   }
 
-  /// Makes a window fullscreen by removing decorations and maximizing.
-  /// [windowId] is expected to be the HWND of the window.
-  static Future<void> makeWindowFullscreen(int windowId) async {
+  /// Makes a window fullscreen by positioning it to cover the entire screen including taskbar.
+  /// Also makes the window frameless (no title bar, borders, buttons).
+  static Future<void> makeWindowFullscreen(
+    int windowId,
+    int x,
+    int y,
+    int width,
+    int height,
+  ) async {
     final hwnd = windowId;
-    print('WindowsWindowService: Making window fullscreen. HWND: $hwnd');
+    print('WindowsWindowService: Setting fullscreen: ${width}x$height at ($x, $y)');
 
     try {
-      // Wait a bit for window to be fully initialized
-      await Future.delayed(const Duration(milliseconds: 100));
+      // Wait for window to be fully ready
+      await Future.delayed(const Duration(milliseconds: 800));
       
-      // First make it frameless
-      makeWindowFrameless(hwnd);
-      
-      // Get monitor info for the window's current monitor
-      final monitorInfo = calloc<MONITORINFO>();
-      monitorInfo.ref.cbSize = sizeOf<MONITORINFO>();
-      
-      final hMonitor = MonitorFromWindow(hwnd, MONITOR_FROM_FLAGS.MONITOR_DEFAULTTONEAREST);
-      if (GetMonitorInfo(hMonitor, monitorInfo) != 0) {
-        final rect = monitorInfo.ref.rcMonitor;
-        final width = rect.right - rect.left;
-        final height = rect.bottom - rect.top;
-        
-        print('Monitor dimensions: ${width}x$height at (${rect.left}, ${rect.top})');
-        
-        // Set window to cover entire monitor
-        SetWindowPos(
-          hwnd,
-          HWND_TOPMOST,
-          rect.left,
-          rect.top,
-          width,
-          height,
-          SET_WINDOW_POS_FLAGS.SWP_SHOWWINDOW | SET_WINDOW_POS_FLAGS.SWP_FRAMECHANGED
-        );
-      } else {
-        // Fallback: just maximize
-        SetWindowPos(
-          hwnd,
-          HWND_TOPMOST,
-          0, 0, 0, 0,
-          SET_WINDOW_POS_FLAGS.SWP_NOMOVE | 
-          SET_WINDOW_POS_FLAGS.SWP_NOSIZE | 
-          SET_WINDOW_POS_FLAGS.SWP_SHOWWINDOW
-        );
-        ShowWindow(hwnd, SHOW_WINDOW_CMD.SW_MAXIMIZE);
+      // Try to hide taskbar temporarily
+      final taskbarHwnd = FindWindow('Shell_TrayWnd'.toNativeUtf16(), nullptr);
+      if (taskbarHwnd != 0) {
+        ShowWindow(taskbarHwnd, SHOW_WINDOW_CMD.SW_HIDE);
+        print('✓ Taskbar hidden');
       }
       
-      calloc.free(monitorInfo);
+      // Since SetWindowLongPtr fails, try using DWM (Desktop Window Manager) to hide title bar
+      // DWMWA_NCRENDERING_POLICY = 2, DWMNCRP_DISABLED = 1
+      try {
+        final policyValue = calloc<Int32>();
+        policyValue.value = 1; // DWMNCRP_DISABLED
+        
+        // Try to call DwmSetWindowAttribute (may not work but worth trying)
+        final dwmResult = DwmSetWindowAttribute(
+          hwnd,
+          2, // DWMWA_NCRENDERING_POLICY
+          policyValue,
+          sizeOf<Int32>(),
+        );
+        
+        calloc.free(policyValue);
+        
+        if (dwmResult == 0) {
+          print('✓ DWM title bar disabled');
+        }
+      } catch (e) {
+        print('DWM approach failed: $e');
+      }
       
-      print('WindowsWindowService: Window set to fullscreen mode');
+      // Maximize the window
+      ShowWindow(hwnd, SHOW_WINDOW_CMD.SW_MAXIMIZE);
+      
+      // Set window to topmost and try to position it
+      SetWindowPos(
+        hwnd,
+        HWND_TOPMOST,
+        x,
+        y,
+        width,
+        height,
+        SET_WINDOW_POS_FLAGS.SWP_SHOWWINDOW
+      );
+      
+      print('✓ Window set to fullscreen');
     } catch (e) {
       print('WindowsWindowService: Error setting fullscreen: $e');
+    }
+  }
+  
+  /// Restores the taskbar when presentation window closes
+  static void restoreTaskbar() {
+    try {
+      final taskbarHwnd = FindWindow('Shell_TrayWnd'.toNativeUtf16(), nullptr);
+      if (taskbarHwnd != 0) {
+        ShowWindow(taskbarHwnd, SHOW_WINDOW_CMD.SW_SHOW);
+        print('✓ Taskbar restored');
+      }
+    } catch (e) {
+      print('Error restoring taskbar: $e');
     }
   }
 }

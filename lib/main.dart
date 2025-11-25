@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:desktop_multi_window/desktop_multi_window.dart';
+import 'package:window_manager/window_manager.dart';
 import 'dart:convert';
 import 'providers/bible_provider.dart';
 import 'providers/ghs_provider.dart';
@@ -31,45 +32,41 @@ void main(List<String> args) async {
       // This is a presentation window
       print('=== SUB-WINDOW DETECTED ===');
       print('Window ID: $windowId');
-      print('Args count: ${args.length}');
       
+      // Initialize WindowManager for this window
+      await windowManager.ensureInitialized();
+      
+      WindowOptions windowOptions = const WindowOptions(
+        size: Size(800, 600),
+        center: true,
+        backgroundColor: Colors.black,
+        skipTaskbar: false,
+        titleBarStyle: TitleBarStyle.hidden,
+      );
+      
+      await windowManager.waitUntilReadyToShow(windowOptions, () async {
+        await windowManager.show();
+        await windowManager.setFullScreen(true);
+      });
+
       // Parse data from third argument (args[2])
       // The data is wrapped as: {"type":"hymn|bible","data":{...}}
       Hymn? hymn;
       if (args.length > 2) {
         try {
-          final jsonPreview = args[2].length > 100 ? args[2].substring(0, 100) : args[2];
-          print('JSON preview: $jsonPreview...');
-          
-          print('=== PARSING JSON ===');
-          print('Raw args[2]: ${args[2]}');
-          
           final wrappedData = jsonDecode(args[2]);
-          print('Decoded wrappedData: $wrappedData');
-          print('wrappedData type: ${wrappedData.runtimeType}');
-          
           final type = wrappedData['type'];
           final data = wrappedData['data'];
           
-          print('Presentation type: $type');
-          print('Data: $data');
-          print('Data type: ${data.runtimeType}');
-          
           if (type == 'hymn' && data != null) {
-            print('Attempting to parse hymn from data...');
             hymn = Hymn.fromJson(data);
-            print('✓ Hymn parsed successfully: ${hymn.title}');
+            print('✓ Hymn loaded: ${hymn.title}');
           } else if (type == 'bible') {
             print('Bible presentation detected (not yet implemented in sub-window)');
-          } else {
-            print('✗ Unknown type or null data: type=$type, data=$data');
           }
-        } catch (e, stackTrace) {
+        } catch (e) {
           print('✗ Error parsing presentation data: $e');
-          print('Stack trace: $stackTrace');
         }
-      } else {
-        print('✗ WARNING: No presentation data in args!');
       }
       
       print('Launching presentation window with hymn: ${hymn?.title ?? "NULL"}');
