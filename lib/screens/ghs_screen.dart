@@ -93,8 +93,27 @@ class _GhsScreenState extends State<GhsScreen> {
       bindings: {
         const SingleActivator(LogicalKeyboardKey.f5): _goLive,
         const SingleActivator(LogicalKeyboardKey.keyR): _goLive,
-        const SingleActivator(LogicalKeyboardKey.escape): () {
-          Navigator.pop(context);
+        const SingleActivator(LogicalKeyboardKey.arrowLeft): () {
+          PresentationWindowService.sendNavigationCommand('previous');
+        },
+        const SingleActivator(LogicalKeyboardKey.arrowRight): () {
+          PresentationWindowService.sendNavigationCommand('next');
+        },
+        const SingleActivator(LogicalKeyboardKey.escape): () async {
+          // Close presentation window if active, otherwise go back
+          if (PresentationWindowService.isPresentationActive) {
+            await PresentationWindowService.closePresentationWindow();
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Presentation closed'),
+                  backgroundColor: Colors.orange,
+                ),
+              );
+            }
+          } else {
+            Navigator.pop(context);
+          }
         },
       },
       child: Focus(

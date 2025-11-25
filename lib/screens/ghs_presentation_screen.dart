@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:desktop_multi_window/desktop_multi_window.dart';
 import '../providers/ghs_provider.dart';
 
 class GhsPresentationScreen extends StatefulWidget {
@@ -19,8 +20,23 @@ class _GhsPresentationScreenState extends State<GhsPresentationScreen> {
   void initState() {
     super.initState();
     _prepareSlides();
+    _setupMessageHandler();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       FocusScope.of(context).requestFocus(_focusNode);
+    });
+  }
+
+  void _setupMessageHandler() {
+    DesktopMultiWindow.setMethodHandler((call, fromWindowId) async {
+      if (call.method == 'navigate_slide') {
+        final direction = call.arguments as String;
+        if (direction == 'next') {
+          _nextSlide();
+        } else if (direction == 'previous') {
+          _previousSlide();
+        }
+      }
+      return null;
     });
   }
 
@@ -222,16 +238,6 @@ class _GhsPresentationScreenState extends State<GhsPresentationScreen> {
                         const Icon(Icons.arrow_forward, color: Colors.white54, size: 20),
                       ],
                     ),
-                  ),
-                ),
-                // Close Button
-                Positioned(
-                  top: 30,
-                  right: 30,
-                  child: IconButton(
-                    icon: const Icon(Icons.close, color: Colors.white54, size: 36),
-                    onPressed: () => Navigator.pop(context),
-                    tooltip: 'Press ESC to exit',
                   ),
                 ),
               ],

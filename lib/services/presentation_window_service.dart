@@ -106,6 +106,9 @@ class PresentationWindowService {
       print('Window size: ${rect.width} x ${rect.height}');
       print('========================');
       
+      // Store window ID for later communication
+      _presentationWindowId = window.windowId;
+      
     } catch (e) {
       print('Error creating presentation window: $e');
       ScaffoldMessenger.of(context).showSnackBar(
