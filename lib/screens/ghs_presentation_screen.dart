@@ -339,8 +339,7 @@ class _GhsPresentationScreenState extends State<GhsPresentationScreen> {
         ),
       ),
     ),
-  ),
-);
+    );
   }
 }
 

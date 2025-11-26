@@ -256,7 +256,6 @@ class _BiblePresentationScreenState extends State<BiblePresentationScreen> {
         ),
       ),
     ),
-  ),
-);
+    );
   }
 }
