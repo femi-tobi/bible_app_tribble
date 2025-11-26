@@ -6,11 +6,14 @@ import 'package:window_manager/window_manager.dart';
 import 'dart:convert';
 import 'providers/bible_provider.dart';
 import 'providers/ghs_provider.dart';
+import 'providers/sermon_provider.dart';
 import 'providers/presentation_config_provider.dart';
 import 'screens/home_screen.dart';
 import 'screens/ghs_presentation_screen.dart';
 import 'screens/bible_presentation_screen.dart';
+import 'screens/sermon_presentation_screen.dart';
 import 'models/hymn.dart';
+import 'models/sermon.dart';
 
 void main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -56,9 +59,10 @@ void main(List<String> args) async {
       });
 
       // Parse data from third argument (args[2])
-      // The data is wrapped as: {"type":"hymn|bible","data":{...}}
+      // The data is wrapped as: {"type":"hymn|bible|sermon","data":{...}}
       Hymn? hymn;
       Map<String, dynamic>? bibleData;
+      Map<String, dynamic>? sermonData;
       Map<String, dynamic>? hymnConfig;
       String presentationType = '';
       
@@ -84,6 +88,9 @@ void main(List<String> args) async {
           } else if (type == 'bible' && data != null) {
             bibleData = Map<String, dynamic>.from(data);
             print('✓ Bible verse loaded: ${bibleData['book']} ${bibleData['chapter']}:${bibleData['verse']}');
+          } else if (type == 'sermon' && data != null) {
+            sermonData = Map<String, dynamic>.from(data);
+            print('✓ Sermon loaded: ${sermonData['topic']}');
           }
         } catch (e) {
           print('✗ Error parsing presentation data: $e');
@@ -96,6 +103,8 @@ void main(List<String> args) async {
         runApp(_createHymnPresentationWindow(windowId, hymn, hymnConfig));
       } else if (presentationType == 'bible') {
         runApp(_createBiblePresentationWindow(windowId, bibleData));
+      } else if (presentationType == 'sermon') {
+        runApp(_createSermonPresentationWindow(windowId, sermonData));
       }
       return;
     }
@@ -184,6 +193,32 @@ Widget _createBiblePresentationWindow(int windowId, Map<String, dynamic>? verseD
   );
 }
 
+// Create Sermon presentation window app
+Widget _createSermonPresentationWindow(int windowId, Map<String, dynamic>? sermonData) {
+  return MaterialApp(
+    title: 'Sermon Presentation',
+    debugShowCheckedModeBanner: false,
+    theme: ThemeData(
+      brightness: Brightness.dark,
+      primaryColor: const Color(0xFF1E1E1E),
+      scaffoldBackgroundColor: const Color(0xFF121212),
+      textTheme: GoogleFonts.interTextTheme(
+        ThemeData.dark().textTheme,
+      ).apply(
+        bodyColor: Colors.white,
+        displayColor: Colors.white,
+      ),
+      colorScheme: const ColorScheme.dark(
+        primary: Color(0xFF6C63FF),
+        secondary: Color(0xFF03DAC6),
+        surface: Color(0xFF1E1E1E),
+      ),
+      useMaterial3: true,
+    ),
+    home: SermonPresentationScreen(data: sermonData),
+  );
+}
+
 class BibleApp extends StatelessWidget {
   const BibleApp({super.key});
 
@@ -193,6 +228,7 @@ class BibleApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => BibleProvider()),
         ChangeNotifierProvider(create: (_) => GhsProvider()),
+        ChangeNotifierProvider(create: (_) => SermonProvider()),
         ChangeNotifierProvider(create: (_) => PresentationConfigProvider()..load()),
       ],
       child: MaterialApp(

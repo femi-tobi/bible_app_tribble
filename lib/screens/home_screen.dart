@@ -11,6 +11,7 @@ import '../widgets/chapter_grid.dart';
 import '../widgets/verse_grid.dart';
 import '../widgets/presentation_settings_sheet.dart';
 import 'ghs_screen.dart';
+import 'sermon_editor_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -297,7 +298,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   child: Column(
                     children: [
-                      // GHS and Settings Buttons - Always visible
+                      // GHS, Sermon, and Settings Buttons - Always visible
                       Padding(
                         padding: const EdgeInsets.all(8),
                         child: Row(
@@ -320,6 +321,29 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                                 child: const Text(
                                   'GHS',
+                                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: ElevatedButton(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => const SermonEditorScreen(),
+                                    ),
+                                  );
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                  backgroundColor: const Color(0xFF6C63FF),
+                                  foregroundColor: Colors.white,
+                                  minimumSize: Size.zero,
+                                ),
+                                child: const Text(
+                                  'Sermon',
                                   style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
                                 ),
                               ),

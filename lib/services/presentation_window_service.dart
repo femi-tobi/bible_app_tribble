@@ -5,6 +5,7 @@ import 'package:screen_retriever/screen_retriever.dart';
 import 'package:window_manager/window_manager.dart';
 import 'dart:io' show Platform;
 import '../models/hymn.dart';
+import '../models/sermon.dart';
 import 'windows_window_service.dart';
 
 class PresentationWindowService {
@@ -30,6 +31,17 @@ class PresentationWindowService {
     final dataWithConfig = Map<String, dynamic>.from(verseData);
     dataWithConfig['config'] = config;
     await _createWindow(context, dataWithConfig, 'bible');
+  }
+
+  static Future<void> openSermonPresentation(
+    BuildContext context,
+    Sermon sermon,
+    Map<String, dynamic> config,
+  ) async {
+    // Include config in sermon data
+    final sermonData = sermon.toMap();
+    sermonData['config'] = config;
+    await _createWindow(context, sermonData, 'sermon');
   }
 
   static Future<void> _createWindow(
@@ -87,7 +99,11 @@ class PresentationWindowService {
       
       // Configure window for presentation
       await windowController.setFrame(rect);
-      await windowController.setTitle(type == 'hymn' ? 'GHS Presentation' : 'Bible Presentation');
+      String title = 'Presentation';
+      if (type == 'hymn') title = 'GHS Presentation';
+      else if (type == 'bible') title = 'Bible Presentation';
+      else if (type == 'sermon') title = 'Sermon Presentation';
+      await windowController.setTitle(title);
       await windowController.show();
       
       // Apply fullscreen on Windows to cover taskbar (includes making frameless)
