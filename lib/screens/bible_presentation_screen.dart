@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:desktop_multi_window/desktop_multi_window.dart';
 import 'package:animate_do/animate_do.dart';
+import 'dart:io';
 import '../models/presentation_config.dart';
 
 class BiblePresentationScreen extends StatefulWidget {
@@ -110,8 +111,18 @@ class _BiblePresentationScreenState extends State<BiblePresentationScreen> {
     if (widget.data == null) {
       return Scaffold(
         backgroundColor: _config.backgroundColor,
-        body: const Center(
-          child: Text('No data', style: TextStyle(color: Colors.white)),
+        body: Container(
+          decoration: _config.backgroundImagePath != null
+              ? BoxDecoration(
+                  image: DecorationImage(
+                    image: FileImage(File(_config.backgroundImagePath!)),
+                    fit: BoxFit.cover,
+                  ),
+                )
+              : null,
+          child: const Center(
+            child: Text('No data', style: TextStyle(color: Colors.white)),
+          ),
         ),
       );
     }
@@ -179,8 +190,17 @@ class _BiblePresentationScreenState extends State<BiblePresentationScreen> {
         focusNode: _focusNode,
         autofocus: true,
         child: Scaffold(
-          backgroundColor: _config.backgroundColor,
-          body: GestureDetector(
+          backgroundColor: _config.backgroundImagePath != null ? Colors.transparent : _config.backgroundColor,
+          body: Container(
+            decoration: _config.backgroundImagePath != null
+                ? BoxDecoration(
+                    image: DecorationImage(
+                      image: FileImage(File(_config.backgroundImagePath!)),
+                      fit: BoxFit.cover,
+                    ),
+                  )
+                : null,
+            child: GestureDetector(
             onHorizontalDragEnd: (details) {
               // Swipe gestures - but Bible navigation is handled by main app
               // This is just for visual feedback if needed
@@ -235,6 +255,8 @@ class _BiblePresentationScreenState extends State<BiblePresentationScreen> {
           ),
         ),
       ),
-    );
+    ),
+  ),
+);
   }
 }

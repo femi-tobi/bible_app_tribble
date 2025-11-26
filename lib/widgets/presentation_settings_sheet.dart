@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'dart:io';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import '../models/presentation_config.dart';
 import '../providers/presentation_config_provider.dart';
@@ -94,6 +96,82 @@ class PresentationSettingsSheet extends StatelessWidget {
                       provider.config.verseColor,
                       (color) => provider.setVerse(color),
                     ),
+                    
+                    const SizedBox(height: 16),
+                    _buildSectionHeader('Background Image'),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (provider.config.backgroundImagePath != null)
+                            Stack(
+                              children: [
+                                Container(
+                                  height: 100,
+                                  width: double.infinity,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: Colors.white24),
+                                    image: DecorationImage(
+                                      image: FileImage(File(provider.config.backgroundImagePath!)),
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                ),
+                                Positioned(
+                                  top: 4,
+                                  right: 4,
+                                  child: IconButton(
+                                    icon: const Icon(Icons.delete, color: Colors.red),
+                                    onPressed: () => provider.setBackgroundImage(null),
+                                    style: IconButton.styleFrom(
+                                      backgroundColor: Colors.black54,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            )
+                          else
+                            Container(
+                              height: 100,
+                              width: double.infinity,
+                              decoration: BoxDecoration(
+                                color: Colors.white10,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.white24),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  'No image selected',
+                                  style: TextStyle(color: Colors.white30),
+                                ),
+                              ),
+                            ),
+                          const SizedBox(height: 8),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              icon: const Icon(Icons.image),
+                              label: const Text('Pick Image'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF2C2C2C),
+                                foregroundColor: Colors.white,
+                              ),
+                              onPressed: () async {
+                                final result = await FilePicker.platform.pickFiles(
+                                  type: FileType.image,
+                                );
+                                if (result != null && result.files.single.path != null) {
+                                  provider.setBackgroundImage(result.files.single.path);
+                                }
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
                   ],
                 );
               },

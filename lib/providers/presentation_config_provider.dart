@@ -60,4 +60,10 @@ class PresentationConfigProvider with ChangeNotifier {
     _save();
     notifyListeners();
   }
+
+  void setBackgroundImage(String? path) {
+    _config.backgroundImagePath = path;
+    _save();
+    notifyListeners();
+  }
 }

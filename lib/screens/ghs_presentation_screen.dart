@@ -5,6 +5,7 @@ import 'package:desktop_multi_window/desktop_multi_window.dart';
 import 'package:animate_do/animate_do.dart';
 import '../providers/ghs_provider.dart';
 import '../providers/presentation_config_provider.dart';
+import 'dart:io';
 import '../models/presentation_config.dart';
 
 class GhsPresentationScreen extends StatefulWidget {
@@ -137,10 +138,20 @@ class _GhsPresentationScreenState extends State<GhsPresentationScreen> {
     if (hymn == null || _slides.isEmpty) {
       return Scaffold(
         backgroundColor: config.backgroundColor,
-        body: const Center(
-          child: Text(
-            'No hymn data',
-            style: TextStyle(color: Colors.white54, fontSize: 24),
+        body: Container(
+          decoration: config.backgroundImagePath != null
+              ? BoxDecoration(
+                  image: DecorationImage(
+                    image: FileImage(File(config.backgroundImagePath!)),
+                    fit: BoxFit.cover,
+                  ),
+                )
+              : null,
+          child: const Center(
+            child: Text(
+              'No hymn data',
+              style: TextStyle(color: Colors.white54, fontSize: 24),
+            ),
           ),
         ),
       );
@@ -216,8 +227,17 @@ class _GhsPresentationScreenState extends State<GhsPresentationScreen> {
         focusNode: _focusNode,
         autofocus: true,
         child: Scaffold(
-          backgroundColor: config.backgroundColor,
-          body: GestureDetector(
+          backgroundColor: config.backgroundImagePath != null ? Colors.transparent : config.backgroundColor,
+          body: Container(
+            decoration: config.backgroundImagePath != null
+                ? BoxDecoration(
+                    image: DecorationImage(
+                      image: FileImage(File(config.backgroundImagePath!)),
+                      fit: BoxFit.cover,
+                    ),
+                  )
+                : null,
+            child: GestureDetector(
             onHorizontalDragEnd: (details) {
               if (details.primaryVelocity! > 0) {
                 _previousSlide();
@@ -318,7 +338,9 @@ class _GhsPresentationScreenState extends State<GhsPresentationScreen> {
           ),
         ),
       ),
-    );
+    ),
+  ),
+);
   }
 }
 

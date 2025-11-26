@@ -9,12 +9,15 @@ class PresentationConfig {
   Color verseColor;
   PresentationAnimation animation;
 
+  String? backgroundImagePath;
+
   PresentationConfig({
     this.scale = 1.0,
     this.backgroundColor = Colors.black,
     this.referenceColor = const Color(0xFF03DAC6),
     this.verseColor = Colors.white,
     this.animation = PresentationAnimation.none,
+    this.backgroundImagePath,
   });
 
   Map<String, dynamic> toMap() => {
@@ -23,6 +26,7 @@ class PresentationConfig {
         'referenceColor': referenceColor.value,
         'verseColor': verseColor.value,
         'animation': animation.index,
+        'backgroundImagePath': backgroundImagePath,
       };
 
   factory PresentationConfig.fromMap(Map<String, dynamic> map) =>
@@ -32,5 +36,6 @@ class PresentationConfig {
         referenceColor: Color(map['referenceColor'] as int),
         verseColor: Color(map['verseColor'] as int),
         animation: PresentationAnimation.values[map['animation'] as int],
+        backgroundImagePath: map['backgroundImagePath'] as String?,
       );
 }
