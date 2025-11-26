@@ -13,15 +13,23 @@ class PresentationWindowService {
   static Future<void> openFullscreenPresentation(
     BuildContext context,
     Hymn hymn,
+    Map<String, dynamic> config,
   ) async {
-    await _createWindow(context, hymn.toJson(), 'hymn');
+    // Include config in hymn data
+    final hymnData = hymn.toJson();
+    hymnData['config'] = config;
+    await _createWindow(context, hymnData, 'hymn');
   }
 
   static Future<void> openBiblePresentation(
     BuildContext context,
     Map<String, dynamic> verseData,
+    Map<String, dynamic> config,
   ) async {
-    await _createWindow(context, verseData, 'bible');
+    // Include config in verse data
+    final dataWithConfig = Map<String, dynamic>.from(verseData);
+    dataWithConfig['config'] = config;
+    await _createWindow(context, dataWithConfig, 'bible');
   }
 
   static Future<void> _createWindow(

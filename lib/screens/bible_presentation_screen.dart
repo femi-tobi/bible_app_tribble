@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:desktop_multi_window/desktop_multi_window.dart';
 import 'package:animate_do/animate_do.dart';
+import '../models/presentation_config.dart';
 
 class BiblePresentationScreen extends StatefulWidget {
   final dynamic data;
@@ -21,6 +22,7 @@ class _BiblePresentationScreenState extends State<BiblePresentationScreen> {
   int _chapter = 0;
   int _verse = 0;
   String _text = '';
+  PresentationConfig _config = PresentationConfig();
 
   @override
   void initState() {
@@ -43,6 +45,16 @@ class _BiblePresentationScreenState extends State<BiblePresentationScreen> {
       _chapter = map['chapter'] ?? 0;
       _verse = map['verse'] ?? 0;
       _text = map['text'] ?? '';
+      
+      // Parse config if present
+      if (map['config'] != null && map['config'] is Map) {
+        try {
+          _config = PresentationConfig.fromMap(Map<String, dynamic>.from(map['config']));
+          print('Config loaded: scale=${_config.scale}, bg=${_config.backgroundColor}');
+        } catch (e) {
+          print('Error parsing config: $e');
+        }
+      }
       
       print('Parsed - Book: $_bookName, Chapter: $_chapter, Verse: $_verse');
       print('Text length: ${_text.length}');
@@ -71,6 +83,17 @@ class _BiblePresentationScreenState extends State<BiblePresentationScreen> {
           _text = verseData['text'] ?? '';
         });
         print('Updated verse: $_bookName $_chapter:$_verse');
+      } else if (call.method == 'init_config') {
+        // Update config
+        final configData = call.arguments as Map;
+        setState(() {
+          try {
+            _config = PresentationConfig.fromMap(Map<String, dynamic>.from(configData));
+            print('Config updated: scale=${_config.scale}');
+          } catch (e) {
+            print('Error updating config: $e');
+          }
+        });
       }
       return null;
     });
@@ -85,12 +108,65 @@ class _BiblePresentationScreenState extends State<BiblePresentationScreen> {
   @override
   Widget build(BuildContext context) {
     if (widget.data == null) {
-      return const Scaffold(
-        backgroundColor: Colors.black,
-        body: Center(
+      return Scaffold(
+        backgroundColor: _config.backgroundColor,
+        body: const Center(
           child: Text('No data', style: TextStyle(color: Colors.white)),
         ),
       );
+    }
+
+    // Determine animation widget based on config
+    Widget Function(Widget, Animation<double>) transitionBuilder;
+    
+    switch (_config.animation) {
+      case PresentationAnimation.none:
+        transitionBuilder = (child, animation) {
+          return child; // No animation, instant transition
+        };
+        break;
+      case PresentationAnimation.fade:
+        transitionBuilder = (child, animation) {
+          return FadeTransition(
+            opacity: animation,
+            child: child,
+          );
+        };
+        break;
+      case PresentationAnimation.slide:
+        transitionBuilder = (child, animation) {
+          return FadeTransition(
+            opacity: animation,
+            child: SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(0.1, 0),
+                end: Offset.zero,
+              ).animate(CurvedAnimation(
+                parent: animation,
+                curve: Curves.easeOutCubic,
+              )),
+              child: child,
+            ),
+          );
+        };
+        break;
+      case PresentationAnimation.zoom:
+        transitionBuilder = (child, animation) {
+          return FadeTransition(
+            opacity: animation,
+            child: ScaleTransition(
+              scale: Tween<double>(
+                begin: 0.8,
+                end: 1.0,
+              ).animate(CurvedAnimation(
+                parent: animation,
+                curve: Curves.easeOutCubic,
+              )),
+              child: child,
+            ),
+          );
+        };
+        break;
     }
 
     return CallbackShortcuts(
@@ -103,7 +179,7 @@ class _BiblePresentationScreenState extends State<BiblePresentationScreen> {
         focusNode: _focusNode,
         autofocus: true,
         child: Scaffold(
-          backgroundColor: Colors.black,
+          backgroundColor: _config.backgroundColor,
           body: GestureDetector(
             onHorizontalDragEnd: (details) {
               // Swipe gestures - but Bible navigation is handled by main app
@@ -114,21 +190,7 @@ class _BiblePresentationScreenState extends State<BiblePresentationScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 80, vertical: 60),
                 child: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 400),
-                  transitionBuilder: (child, animation) {
-                    return FadeTransition(
-                      opacity: animation,
-                      child: SlideTransition(
-                        position: Tween<Offset>(
-                          begin: const Offset(0.1, 0),
-                          end: Offset.zero,
-                        ).animate(CurvedAnimation(
-                          parent: animation,
-                          curve: Curves.easeOutCubic,
-                        )),
-                        child: child,
-                      ),
-                    );
-                  },
+                  transitionBuilder: transitionBuilder,
                   child: Column(
                     key: ValueKey('$_bookName$_chapter:$_verse'),
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -139,9 +201,9 @@ class _BiblePresentationScreenState extends State<BiblePresentationScreen> {
                         duration: const Duration(milliseconds: 600),
                         child: Text(
                           '$_bookName $_chapter:$_verse',
-                          style: const TextStyle(
-                            color: Color(0xFF03DAC6),
-                            fontSize: 48,
+                          style: TextStyle(
+                            color: _config.referenceColor,
+                            fontSize: 48 * _config.scale,
                             fontWeight: FontWeight.bold,
                             letterSpacing: 2,
                           ),
@@ -155,9 +217,9 @@ class _BiblePresentationScreenState extends State<BiblePresentationScreen> {
                           child: Text(
                             _text,
                             textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 72,
+                            style: TextStyle(
+                              color: _config.verseColor,
+                              fontSize: 72 * _config.scale,
                               fontWeight: FontWeight.bold,
                               height: 1.3,
                               letterSpacing: 1,

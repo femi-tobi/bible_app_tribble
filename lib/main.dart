@@ -59,6 +59,7 @@ void main(List<String> args) async {
       // The data is wrapped as: {"type":"hymn|bible","data":{...}}
       Hymn? hymn;
       Map<String, dynamic>? bibleData;
+      Map<String, dynamic>? hymnConfig;
       String presentationType = '';
       
       if (args.length > 2) {
@@ -69,7 +70,16 @@ void main(List<String> args) async {
           presentationType = type ?? '';
           
           if (type == 'hymn' && data != null) {
-            hymn = Hymn.fromJson(data);
+            // Extract config if present
+            if (data['config'] != null) {
+              hymnConfig = Map<String, dynamic>.from(data['config']);
+              // Remove config from data before parsing Hymn
+              final hymnData = Map<String, dynamic>.from(data);
+              hymnData.remove('config');
+              hymn = Hymn.fromJson(hymnData);
+            } else {
+              hymn = Hymn.fromJson(data);
+            }
             print('✓ Hymn loaded: ${hymn.title}');
           } else if (type == 'bible' && data != null) {
             bibleData = Map<String, dynamic>.from(data);
@@ -83,7 +93,7 @@ void main(List<String> args) async {
       print('Launching $presentationType presentation window');
       
       if (presentationType == 'hymn') {
-        runApp(_createHymnPresentationWindow(windowId, hymn));
+        runApp(_createHymnPresentationWindow(windowId, hymn, hymnConfig));
       } else if (presentationType == 'bible') {
         runApp(_createBiblePresentationWindow(windowId, bibleData));
       }
@@ -97,15 +107,32 @@ void main(List<String> args) async {
 }
 
 // Create hymn presentation window app
-Widget _createHymnPresentationWindow(int windowId, Hymn? hymn) {
-  return ChangeNotifierProvider(
-    create: (_) {
-      final provider = GhsProvider();
-      if (hymn != null) {
-        provider.setCurrentHymnDirect(hymn);
-      }
-      return provider;
-    },
+Widget _createHymnPresentationWindow(int windowId, Hymn? hymn, Map<String, dynamic>? config) {
+  return MultiProvider(
+    providers: [
+      ChangeNotifierProvider(
+        create: (_) {
+          final provider = GhsProvider();
+          if (hymn != null) {
+            provider.setCurrentHymnDirect(hymn);
+          }
+          return provider;
+        },
+      ),
+      ChangeNotifierProvider(
+        create: (_) {
+          final provider = PresentationConfigProvider();
+          if (config != null) {
+            try {
+              provider.loadFromMap(config);
+            } catch (e) {
+              print('Error loading config: $e');
+            }
+          }
+          return provider;
+        },
+      ),
+    ],
     child: MaterialApp(
       title: 'GHS Presentation',
       debugShowCheckedModeBanner: false,
@@ -156,7 +183,27 @@ Widget _createBiblePresentationWindow(int windowId, Map<String, dynamic>? verseD
     home: BiblePresentationScreen(data: verseData),
   );
 }
-            Theme.of(context).textTheme,
+
+class BibleApp extends StatelessWidget {
+  const BibleApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => BibleProvider()),
+        ChangeNotifierProvider(create: (_) => GhsProvider()),
+        ChangeNotifierProvider(create: (_) => PresentationConfigProvider()..load()),
+      ],
+      child: MaterialApp(
+        title: 'Bible App',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          brightness: Brightness.dark,
+          primaryColor: const Color(0xFF1E1E1E),
+          scaffoldBackgroundColor: const Color(0xFF121212),
+          textTheme: GoogleFonts.interTextTheme(
+            ThemeData.dark().textTheme,
           ).apply(
             bodyColor: Colors.white,
             displayColor: Colors.white,

@@ -1,3 +1,13 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import '../providers/ghs_provider.dart';
+import '../providers/presentation_config_provider.dart';
+import '../services/presentation_window_service.dart';
+import '../widgets/presentation_settings_sheet.dart';
+
+class GhsScreen extends StatefulWidget {
+  const GhsScreen({super.key});
 
   @override
   State<GhsScreen> createState() => _GhsScreenState();
@@ -50,9 +60,14 @@ class _GhsScreenState extends State<GhsScreen> {
     final ghsProvider = context.read<GhsProvider>();
     if (ghsProvider.currentHymn != null) {
       try {
+        // Get presentation config
+        final configProvider = context.read<PresentationConfigProvider>();
+        final config = configProvider.config.toMap();
+        
         await PresentationWindowService.openFullscreenPresentation(
           context,
           ghsProvider.currentHymn!,
+          config,
         );
         // Show success message
         if (mounted) {
@@ -329,13 +344,42 @@ class _GhsScreenState extends State<GhsScreen> {
                             ),
                           ],
                         ),
-                      // Header
+                      // Header with Settings Button
                       Container(
                         padding: const EdgeInsets.all(16),
                         width: double.infinity,
                         color: const Color(0xFF2C2C2C),
                         child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Hymn Preview',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
                               children: [
+                                IconButton(
+                                  icon: const Icon(Icons.settings, size: 18),
+                                  color: Colors.white70,
+                                  onPressed: () {
+                                    showModalBottomSheet(
+                                      context: context,
+                                      backgroundColor: Colors.transparent,
+                                      isScrollControlled: true,
+                                      builder: (context) => SizedBox(
+                                        height: MediaQuery.of(context).size.height * 0.7,
+                                        child: const PresentationSettingsSheet(),
+                                      ),
+                                    );
+                                  },
+                                  tooltip: 'Presentation Settings',
+                                ),
+                                const SizedBox(width: 8),
                                 _ShortcutBadge(label: 'R'),
                                 const SizedBox(width: 4),
                                 _ShortcutBadge(label: 'F5'),

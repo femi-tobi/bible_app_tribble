@@ -1,4 +1,16 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import '../providers/bible_provider.dart';
+import '../providers/presentation_config_provider.dart';
+import '../services/speech_service.dart';
 import '../services/presentation_window_service.dart';
+import '../constants/bible_data.dart';
+import '../widgets/book_grid_item.dart';
+import '../widgets/chapter_grid.dart';
+import '../widgets/verse_grid.dart';
+import '../widgets/presentation_settings_sheet.dart';
+import 'ghs_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -93,7 +105,11 @@ class _HomeScreenState extends State<HomeScreen> {
         'text': firstVerse.text,
       };
       
-      PresentationWindowService.openBiblePresentation(context, verseData);
+      // Get presentation config
+      final configProvider = context.read<PresentationConfigProvider>();
+      final config = configProvider.config.toMap();
+      
+      PresentationWindowService.openBiblePresentation(context, verseData, config);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please select a verse first')),
@@ -281,6 +297,58 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   child: Column(
                     children: [
+                      // GHS and Settings Buttons - Always visible
+                      Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: ElevatedButton(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => const GhsScreen(),
+                                    ),
+                                  );
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                  backgroundColor: const Color(0xFF03DAC6),
+                                  foregroundColor: Colors.black,
+                                  minimumSize: Size.zero,
+                                ),
+                                child: const Text(
+                                  'GHS',
+                                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            ElevatedButton(
+                              onPressed: () {
+                                showModalBottomSheet(
+                                  context: context,
+                                  backgroundColor: Colors.transparent,
+                                  isScrollControlled: true,
+                                  builder: (context) => SizedBox(
+                                    height: MediaQuery.of(context).size.height * 0.7,
+                                    child: const PresentationSettingsSheet(),
+                                  ),
+                                );
+                              },
+                              style: ElevatedButton.styleFrom(
+                                padding: const EdgeInsets.all(8),
+                                backgroundColor: Colors.grey[800],
+                                foregroundColor: Colors.white,
+                                minimumSize: Size.zero,
+                              ),
+                              child: const Icon(Icons.settings, size: 16),
+                            ),
+                          ],
+                        ),
+                      ),
+                      
                       // Presentation Preview
                       if (bibleProvider.currentResponse != null)
                         Column(
@@ -384,47 +452,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ],
                               ),
                             ),
-                          ],
-                        ),
-                                  ),
-                                ),
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    _ShortcutBadge(label: 'R'),
-                                    const SizedBox(width: 2),
-                                    _ShortcutBadge(label: 'F5'),
-                                  ],
-                                ),
-                              ],
-                            ),
                             const SizedBox(height: 8),
-                            SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton(
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => const GhsScreen(),
-                                    ),
-                                  );
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                                  backgroundColor: const Color(0xFF03DAC6),
-                                  foregroundColor: Colors.black,
-                                  minimumSize: Size.zero,
-                                ),
-                                child: const Text(
-                                  'GHS',
-                                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
-                                ),
-                              ),
-                            ),
                           ],
                         ),
-                      ),
+
                       // List
                       Expanded(
                         child: bibleProvider.isLoading

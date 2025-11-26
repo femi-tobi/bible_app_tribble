@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-enum PresentationAnimation { fade, slide, zoom }
+enum PresentationAnimation { none, fade, slide, zoom }
 
 class PresentationConfig {
   double scale;
@@ -14,7 +14,7 @@ class PresentationConfig {
     this.backgroundColor = Colors.black,
     this.referenceColor = const Color(0xFF03DAC6),
     this.verseColor = Colors.white,
-    this.animation = PresentationAnimation.fade,
+    this.animation = PresentationAnimation.none,
   });
 
   Map<String, dynamic> toMap() => {

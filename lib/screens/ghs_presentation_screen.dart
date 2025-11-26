@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import 'package:desktop_multi_window/desktop_multi_window.dart';
 import 'package:animate_do/animate_do.dart';
 import '../providers/ghs_provider.dart';
+import '../providers/presentation_config_provider.dart';
+import '../models/presentation_config.dart';
 
 class GhsPresentationScreen extends StatefulWidget {
   const GhsPresentationScreen({super.key});
@@ -35,6 +37,15 @@ class _GhsPresentationScreenState extends State<GhsPresentationScreen> {
           _nextSlide();
         } else if (direction == 'previous') {
           _previousSlide();
+        }
+      } else if (call.method == 'init_config') {
+        // Update config via provider
+        final configData = call.arguments as Map;
+        try {
+          context.read<PresentationConfigProvider>().loadFromMap(Map<String, dynamic>.from(configData));
+          print('GHS Config updated via provider');
+        } catch (e) {
+          print('Error updating GHS config: $e');
         }
       }
       return null;
@@ -119,12 +130,14 @@ class _GhsPresentationScreenState extends State<GhsPresentationScreen> {
   @override
   Widget build(BuildContext context) {
     final ghsProvider = context.watch<GhsProvider>();
+    final configProvider = context.watch<PresentationConfigProvider>();
+    final config = configProvider.config;
     final hymn = ghsProvider.currentHymn;
 
     if (hymn == null || _slides.isEmpty) {
-      return const Scaffold(
-        backgroundColor: Colors.black,
-        body: Center(
+      return Scaffold(
+        backgroundColor: config.backgroundColor,
+        body: const Center(
           child: Text(
             'No hymn data',
             style: TextStyle(color: Colors.white54, fontSize: 24),
@@ -134,6 +147,59 @@ class _GhsPresentationScreenState extends State<GhsPresentationScreen> {
     }
 
     final currentSlide = _slides[_currentSlideIndex];
+
+    // Determine animation widget based on config
+    Widget Function(Widget, Animation<double>) transitionBuilder;
+    
+    switch (config.animation) {
+      case PresentationAnimation.none:
+        transitionBuilder = (child, animation) {
+          return child; // No animation, instant transition
+        };
+        break;
+      case PresentationAnimation.fade:
+        transitionBuilder = (child, animation) {
+          return FadeTransition(
+            opacity: animation,
+            child: child,
+          );
+        };
+        break;
+      case PresentationAnimation.slide:
+        transitionBuilder = (child, animation) {
+          return FadeTransition(
+            opacity: animation,
+            child: SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(0.1, 0),
+                end: Offset.zero,
+              ).animate(CurvedAnimation(
+                parent: animation,
+                curve: Curves.easeOutCubic,
+              )),
+              child: child,
+            ),
+          );
+        };
+        break;
+      case PresentationAnimation.zoom:
+        transitionBuilder = (child, animation) {
+          return FadeTransition(
+            opacity: animation,
+            child: ScaleTransition(
+              scale: Tween<double>(
+                begin: 0.8,
+                end: 1.0,
+              ).animate(CurvedAnimation(
+                parent: animation,
+                curve: Curves.easeOutCubic,
+              )),
+              child: child,
+            ),
+          );
+        };
+        break;
+    }
 
     return CallbackShortcuts(
       bindings: {
@@ -150,7 +216,7 @@ class _GhsPresentationScreenState extends State<GhsPresentationScreen> {
         focusNode: _focusNode,
         autofocus: true,
         child: Scaffold(
-          backgroundColor: Colors.black,
+          backgroundColor: config.backgroundColor,
           body: GestureDetector(
             onHorizontalDragEnd: (details) {
               if (details.primaryVelocity! > 0) {
@@ -167,21 +233,7 @@ class _GhsPresentationScreenState extends State<GhsPresentationScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 80, vertical: 60),
                     child: AnimatedSwitcher(
                       duration: const Duration(milliseconds: 400),
-                      transitionBuilder: (child, animation) {
-                        return FadeTransition(
-                          opacity: animation,
-                          child: SlideTransition(
-                            position: Tween<Offset>(
-                              begin: const Offset(0.1, 0),
-                              end: Offset.zero,
-                            ).animate(CurvedAnimation(
-                              parent: animation,
-                              curve: Curves.easeOutCubic,
-                            )),
-                            child: child,
-                          ),
-                        );
-                      },
+                      transitionBuilder: transitionBuilder,
                       child: Column(
                         key: ValueKey(_currentSlideIndex),
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -192,9 +244,9 @@ class _GhsPresentationScreenState extends State<GhsPresentationScreen> {
                             duration: const Duration(milliseconds: 600),
                             child: Text(
                               currentSlide.label,
-                              style: const TextStyle(
-                                color: Color(0xFF03DAC6),
-                                fontSize: 48,
+                              style: TextStyle(
+                                color: config.referenceColor,
+                                fontSize: 48 * config.scale,
                                 fontWeight: FontWeight.bold,
                                 letterSpacing: 2,
                               ),
@@ -214,8 +266,8 @@ class _GhsPresentationScreenState extends State<GhsPresentationScreen> {
                                       line,
                                       textAlign: TextAlign.center,
                                       style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: currentSlide.isTitle ? 64 : 72,
+                                        color: config.verseColor,
+                                        fontSize: (currentSlide.isTitle ? 64 : 72) * config.scale,
                                         fontWeight: FontWeight.bold,
                                         height: 1.3,
                                         letterSpacing: 1,

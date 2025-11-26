@@ -19,6 +19,11 @@ class PresentationConfigProvider with ChangeNotifier {
     }
   }
 
+  void loadFromMap(Map<String, dynamic> map) {
+    _config = PresentationConfig.fromMap(map);
+    notifyListeners();
+  }
+
   Future<void> _save() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('presentationConfig', jsonEncode(_config.toMap()));
