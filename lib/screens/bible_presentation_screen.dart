@@ -47,7 +47,6 @@ class _BiblePresentationScreenState extends State<BiblePresentationScreen> {
       _verse = map['verse'] ?? 0;
       _text = map['text'] ?? '';
       
-      // Parse config if present
       if (map['config'] != null && map['config'] is Map) {
         try {
           _config = PresentationConfig.fromMap(Map<String, dynamic>.from(map['config']));
@@ -75,7 +74,6 @@ class _BiblePresentationScreenState extends State<BiblePresentationScreen> {
           // Navigation handled by main app's BibleProvider
         }
       } else if (call.method == 'update_verse') {
-        // Update the verse display with new data
         final verseData = call.arguments as Map;
         setState(() {
           _bookName = verseData['book'] ?? '';
@@ -85,7 +83,6 @@ class _BiblePresentationScreenState extends State<BiblePresentationScreen> {
         });
         print('Updated verse: $_bookName $_chapter:$_verse');
       } else if (call.method == 'init_config') {
-        // Update config
         final configData = call.arguments as Map;
         setState(() {
           try {
@@ -127,13 +124,12 @@ class _BiblePresentationScreenState extends State<BiblePresentationScreen> {
       );
     }
 
-    // Determine animation widget based on config
     Widget Function(Widget, Animation<double>) transitionBuilder;
     
     switch (_config.animation) {
       case PresentationAnimation.none:
         transitionBuilder = (child, animation) {
-          return child; // No animation, instant transition
+          return child;
         };
         break;
       case PresentationAnimation.fade:
@@ -189,6 +185,21 @@ class _BiblePresentationScreenState extends State<BiblePresentationScreen> {
       child: Focus(
         focusNode: _focusNode,
         autofocus: true,
+        onKeyEvent: (node, event) {
+          if (event is KeyDownEvent) {
+            if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
+              DesktopMultiWindow.invokeMethod(0, 'presentation_navigate', 'next');
+              return KeyEventResult.handled;
+            } else if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+              DesktopMultiWindow.invokeMethod(0, 'presentation_navigate', 'previous');
+              return KeyEventResult.handled;
+            } else if (event.logicalKey == LogicalKeyboardKey.escape) {
+              DesktopMultiWindow.invokeMethod(0, 'close_presentation', null);
+              return KeyEventResult.handled;
+            }
+          }
+          return KeyEventResult.ignored;
+        },
         child: Scaffold(
           backgroundColor: _config.backgroundImagePath != null ? Colors.transparent : _config.backgroundColor,
           body: Container(
@@ -201,61 +212,64 @@ class _BiblePresentationScreenState extends State<BiblePresentationScreen> {
                   )
                 : null,
             child: GestureDetector(
-            onHorizontalDragEnd: (details) {
-              // Swipe gestures - but Bible navigation is handled by main app
-              // This is just for visual feedback if needed
-            },
-            child: Center(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 80, vertical: 60),
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 400),
-                  transitionBuilder: transitionBuilder,
-                  child: Column(
-                    key: ValueKey('$_bookName$_chapter:$_verse'),
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Reference Label
-                      FadeInDown(
-                        duration: const Duration(milliseconds: 600),
-                        child: Text(
-                          '$_bookName $_chapter:$_verse',
-                          style: TextStyle(
-                            color: _config.referenceColor,
-                            fontSize: 48 * _config.scale,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 2,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 40),
-                      // Verse Text
-                      Flexible(
-                        child: FadeInUp(
-                          duration: const Duration(milliseconds: 800),
-                          child: Text(
-                            _text,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: _config.verseColor,
-                              fontSize: 72 * _config.scale,
-                              fontWeight: FontWeight.bold,
-                              height: 1.3,
-                              letterSpacing: 1,
+                onHorizontalDragEnd: (details) {
+                  if (details.primaryVelocity != null) {
+                    if (details.primaryVelocity! > 500) {
+                      DesktopMultiWindow.invokeMethod(0, 'presentation_navigate', 'previous');
+                    } else if (details.primaryVelocity! < -500) {
+                      DesktopMultiWindow.invokeMethod(0, 'presentation_navigate', 'next');
+                    }
+                  }
+                },
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 80, vertical: 60),
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 400),
+                      transitionBuilder: transitionBuilder,
+                      child: Column(
+                        key: ValueKey('$_bookName$_chapter:$_verse'),
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          FadeInDown(
+                            duration: const Duration(milliseconds: 600),
+                            child: Text(
+                              '$_bookName $_chapter:$_verse',
+                              style: TextStyle(
+                                color: _config.referenceColor,
+                                fontSize: 48 * _config.scale,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 2,
+                              ),
                             ),
                           ),
-                        ),
+                          const SizedBox(height: 40),
+                          Flexible(
+                            child: FadeInUp(
+                              duration: const Duration(milliseconds: 800),
+                              child: Text(
+                                _text,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: _config.verseColor,
+                                  fontSize: 72 * _config.scale,
+                                  fontWeight: FontWeight.bold,
+                                  height: 1.3,
+                                  letterSpacing: 1,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
               ),
             ),
           ),
         ),
-      ),
-    ),
     );
   }
 }

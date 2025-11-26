@@ -48,6 +48,7 @@ dependencies:
   flutter_colorpicker: ^1.1.0
   file_picker: ^6.1.1
   uuid: ^4.0.0
+  audioplayers: ^6.0.0
 
 dev_dependencies:
   flutter_test:
@@ -68,19 +69,6 @@ flutter:
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
-  # the material Icons class.
-  uses-material-design: true
-
-  # To add assets to your application, add an assets section, like this:
-  assets:
-    - assets/kjv.json
-    - assets/ghs.json
-
-  # An image asset can refer to one or more resolution-specific "variants", see
-  # https://flutter.dev/to/resolution-aware-images
-
-  # For details regarding adding assets from package dependencies, see
-  # https://flutter.dev/to/asset-from-package
 
   # To add custom fonts to your application, add a fonts section here,
   # in this "flutter" section. Each entry in this list should have a
@@ -101,3 +89,75 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+  assets:
+    - assets/kjv.json
+    - assets/hymns.json
+    - assets/ghs.json
+    - assets/Audio Bible/
+    - assets/Audio Bible/01 Genesis/
+    - assets/Audio Bible/02 Exodus/
+    - assets/Audio Bible/03 Leviticus/
+    - assets/Audio Bible/04 Numbers/
+    - assets/Audio Bible/05 Deuteronomy/
+    - assets/Audio Bible/06 Joshua/
+    - assets/Audio Bible/07 Judges/
+    - assets/Audio Bible/08 Ruth/
+    - assets/Audio Bible/09 I Samuel/
+    - assets/Audio Bible/10 II Samuel/
+    - assets/Audio Bible/11 I Kings/
+    - assets/Audio Bible/12 II Kings/
+    - assets/Audio Bible/13 I Chronicles/
+    - assets/Audio Bible/14 II Chronicles/
+    - assets/Audio Bible/15 Ezra/
+    - assets/Audio Bible/16 Nehemiah/
+    - assets/Audio Bible/17 Esther/
+    - assets/Audio Bible/18 Job/
+    - assets/Audio Bible/19 Psalms/
+    - assets/Audio Bible/20 Proverbs/
+    - assets/Audio Bible/21 Ecclesiastes/
+    - assets/Audio Bible/22 Solomon/
+    - assets/Audio Bible/23 Isaiah/
+    - assets/Audio Bible/24 Jeremiah/
+    - assets/Audio Bible/25 Lamentations/
+    - assets/Audio Bible/26 Ezekiel/
+    - assets/Audio Bible/27 Daniel/
+    - assets/Audio Bible/28 Hosea/
+    - assets/Audio Bible/29 Joel/
+    - assets/Audio Bible/30 Amos/
+    - assets/Audio Bible/31 Obadiah/
+    - assets/Audio Bible/32 Jonah/
+    - assets/Audio Bible/33 Micah/
+    - assets/Audio Bible/34 Nahum/
+    - assets/Audio Bible/35 Habakkuk/
+    - assets/Audio Bible/36 Zephaniah/
+    - assets/Audio Bible/37 Haggai/
+    - assets/Audio Bible/38 Zechariah/
+    - assets/Audio Bible/39 Malachi/
+    - assets/Audio Bible/40 Matthew/
+    - assets/Audio Bible/41 Mark/
+    - assets/Audio Bible/42 Luke/
+    - assets/Audio Bible/43 John/
+    - assets/Audio Bible/44 Acts/
+    - assets/Audio Bible/45 Romans/
+    - assets/Audio Bible/46 I Corinthians/
+    - assets/Audio Bible/47 II Corinthians/
+    - assets/Audio Bible/48 Galatians/
+    - assets/Audio Bible/49 Ephesians/
+    - assets/Audio Bible/50 Philippians/
+    - assets/Audio Bible/51 Colossians/
+    - assets/Audio Bible/52 I Thessalonians/
+    - assets/Audio Bible/53 II Thessalonians/
+    - assets/Audio Bible/54 I Timothy/
+    - assets/Audio Bible/55 II Timothy/
+    - assets/Audio Bible/56 Titus/
+    - assets/Audio Bible/57 Philemon/
+    - assets/Audio Bible/58 Hebrews/
+    - assets/Audio Bible/59 James/
+    - assets/Audio Bible/60 I Peter/
+    - assets/Audio Bible/61 II Peter/
+    - assets/Audio Bible/62 I John/
+    - assets/Audio Bible/63 II John/
+    - assets/Audio Bible/64 III John/
+    - assets/Audio Bible/65 Jude/
+    - assets/Audio Bible/66 Revelation/

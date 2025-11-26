@@ -13,6 +13,10 @@ import '../widgets/presentation_settings_sheet.dart';
 import 'ghs_screen.dart';
 import 'sermon_editor_screen.dart';
 
+import 'package:desktop_multi_window/desktop_multi_window.dart';
+import 'package:audioplayers/audioplayers.dart';
+import '../services/audio_service.dart';
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -25,6 +29,14 @@ class _HomeScreenState extends State<HomeScreen> {
   final SpeechService _speechService = SpeechService();
   final FocusNode _keyboardFocusNode = FocusNode();
   
+  // Audio Player State
+  late AudioPlayer _audioPlayer;
+  bool _isPlaying = false;
+  Duration _duration = Duration.zero;
+  Duration _position = Duration.zero;
+  bool _audioAvailable = false;
+  String? _currentAudioPath;
+  
   bool _isListening = false;
   BibleBook? _selectedBook;
   int? _selectedChapter;
@@ -34,15 +46,103 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    _initAudioPlayer();
     _speechService.initialize();
     // Request focus for keyboard shortcuts
     WidgetsBinding.instance.addPostFrameCallback((_) {
       FocusScope.of(context).requestFocus(_keyboardFocusNode);
     });
+
+    // Listen for messages from presentation window
+    DesktopMultiWindow.setMethodHandler((call, fromWindowId) async {
+      print('Received method call from presentation window: ${call.method}');
+      if (call.method == 'close_presentation') {
+        await PresentationWindowService.closePresentationWindow();
+      } else if (call.method == 'presentation_navigate') {
+        // TODO: Implement verse navigation from presentation window
+        print('Navigation requested: ${call.arguments}');
+      }
+      return null;
+    });
+  }
+
+  void _initAudioPlayer() {
+    _audioPlayer = AudioPlayer();
+    
+    _audioPlayer.onPlayerStateChanged.listen((state) {
+      if (mounted) {
+        setState(() {
+          _isPlaying = state == PlayerState.playing;
+        });
+      }
+    });
+    
+    _audioPlayer.onDurationChanged.listen((duration) {
+      if (mounted) {
+        setState(() {
+          _duration = duration;
+        });
+      }
+    });
+    
+    _audioPlayer.onPositionChanged.listen((position) {
+      if (mounted) {
+        setState(() {
+          _position = position;
+        });
+      }
+    });
+  }
+
+  Future<void> _loadAudioForChapter(String book, int chapter) async {
+    final audioPath = AudioService.getAudioPath(book, chapter);
+    
+    if (audioPath == null) {
+      setState(() {
+        _audioAvailable = false;
+        _currentAudioPath = null;
+      });
+      return;
+    }
+    
+    // If already loaded this file, just return
+    if (_currentAudioPath == audioPath) {
+      setState(() {
+        _audioAvailable = true;
+      });
+      return;
+    }
+    
+    try {
+      await _audioPlayer.stop();
+      await _audioPlayer.setSource(AssetSource(audioPath.replaceFirst('assets/', '')));
+      
+      setState(() {
+        _audioAvailable = true;
+        _currentAudioPath = audioPath;
+        _position = Duration.zero;
+      });
+      
+      print('Audio loaded: $audioPath');
+    } catch (e) {
+      print('Error loading audio: $e');
+      setState(() {
+        _audioAvailable = false;
+        _currentAudioPath = null;
+      });
+    }
+  }
+
+  String _formatDuration(Duration duration) {
+    String twoDigits(int n) => n.toString().padLeft(2, '0');
+    final minutes = twoDigits(duration.inMinutes.remainder(60));
+    final seconds = twoDigits(duration.inSeconds.remainder(60));
+    return '$minutes:$seconds';
   }
 
   @override
   void dispose() {
+    _audioPlayer.dispose();
     _keyboardFocusNode.dispose();
     super.dispose();
   }
@@ -67,6 +167,9 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       _selectedChapter = chapter;
     });
+    if (_selectedBook != null) {
+      _loadAudioForChapter(_selectedBook!.name, chapter);
+    }
   }
 
   void _onVerseSelected(int verse) {
@@ -535,6 +638,87 @@ class _HomeScreenState extends State<HomeScreen> {
                                     ),
                                   ),
                       ),
+                      // Audio Player Controls
+                      if (_audioAvailable)
+                        Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF1E1E1E),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.white12),
+                          ),
+                          child: Column(
+                            children: [
+                              Row(
+                                children: [
+                                  IconButton(
+                                    onPressed: () async {
+                                      if (_isPlaying) {
+                                        await _audioPlayer.pause();
+                                      } else {
+                                        await _audioPlayer.resume();
+                                      }
+                                    },
+                                    icon: Icon(
+                                      _isPlaying ? Icons.pause_circle_filled : Icons.play_circle_filled,
+                                      size: 32,
+                                      color: const Color(0xFF03DAC6),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Audio Bible',
+                                          style: TextStyle(
+                                            color: Colors.white.withOpacity(0.7),
+                                            fontSize: 10,
+                                          ),
+                                        ),
+                                        Text(
+                                          '${_selectedBook?.name ?? ''} $_selectedChapter',
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Text(
+                                    _formatDuration(_position),
+                                    style: const TextStyle(color: Colors.white70, fontSize: 10),
+                                  ),
+                                ],
+                              ),
+                              SliderTheme(
+                                data: SliderThemeData(
+                                  trackHeight: 2,
+                                  thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 4),
+                                  overlayShape: const RoundSliderOverlayShape(overlayRadius: 8),
+                                  activeTrackColor: const Color(0xFF03DAC6),
+                                  inactiveTrackColor: Colors.white12,
+                                  thumbColor: const Color(0xFF03DAC6),
+                                ),
+                                child: Slider(
+                                  value: _duration.inMilliseconds > 0
+                                      ? _position.inMilliseconds.toDouble().clamp(0, _duration.inMilliseconds.toDouble())
+                                      : 0,
+                                  max: _duration.inMilliseconds > 0 ? _duration.inMilliseconds.toDouble() : 1,
+                                  onChanged: (value) async {
+                                    final position = Duration(milliseconds: value.toInt());
+                                    await _audioPlayer.seek(position);
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        
                       // Go Live Button
                       if (bibleProvider.currentResponse != null)
                         Container(
