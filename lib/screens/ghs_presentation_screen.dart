@@ -7,6 +7,8 @@ import '../providers/ghs_provider.dart';
 import '../providers/presentation_config_provider.dart';
 import 'dart:io';
 import '../models/presentation_config.dart';
+import '../models/hymn.dart';
+import '../widgets/ndi_wrapper.dart';
 
 class GhsPresentationScreen extends StatefulWidget {
   const GhsPresentationScreen({super.key});
@@ -47,6 +49,26 @@ class _GhsPresentationScreenState extends State<GhsPresentationScreen> {
           print('GHS Config updated via provider');
         } catch (e) {
           print('Error updating GHS config: $e');
+        }
+      } else if (call.method == 'update_hymn') {
+        final hymnData = call.arguments as Map;
+        try {
+          // Remove config if present
+          if (hymnData.containsKey('config')) {
+            hymnData.remove('config');
+          }
+          
+          final hymn = Hymn.fromJson(Map<String, dynamic>.from(hymnData));
+          context.read<GhsProvider>().setCurrentHymnDirect(hymn);
+          
+          // Re-prepare slides
+          setState(() {
+            _currentSlideIndex = 0;
+            _prepareSlides();
+          });
+          print('GHS Hymn updated: ${hymn.title}');
+        } catch (e) {
+          print('Error updating hymn: $e');
         }
       }
       return null;
@@ -212,128 +234,131 @@ class _GhsPresentationScreenState extends State<GhsPresentationScreen> {
         break;
     }
 
-    return CallbackShortcuts(
-      bindings: {
-        const SingleActivator(LogicalKeyboardKey.escape): () {
-          Navigator.pop(context);
+    return NdiWrapper(
+      streamName: 'Bible App - GHS',
+      child: CallbackShortcuts(
+        bindings: {
+          const SingleActivator(LogicalKeyboardKey.escape): () {
+            Navigator.pop(context);
+          },
+          const SingleActivator(LogicalKeyboardKey.arrowRight): _nextSlide,
+          const SingleActivator(LogicalKeyboardKey.arrowLeft): _previousSlide,
+          const SingleActivator(LogicalKeyboardKey.arrowDown): _nextSlide,
+          const SingleActivator(LogicalKeyboardKey.arrowUp): _previousSlide,
+          const SingleActivator(LogicalKeyboardKey.space): _nextSlide,
         },
-        const SingleActivator(LogicalKeyboardKey.arrowRight): _nextSlide,
-        const SingleActivator(LogicalKeyboardKey.arrowLeft): _previousSlide,
-        const SingleActivator(LogicalKeyboardKey.arrowDown): _nextSlide,
-        const SingleActivator(LogicalKeyboardKey.arrowUp): _previousSlide,
-        const SingleActivator(LogicalKeyboardKey.space): _nextSlide,
-      },
-      child: Focus(
-        focusNode: _focusNode,
-        autofocus: true,
-        child: Scaffold(
-          backgroundColor: config.backgroundImagePath != null ? Colors.transparent : config.backgroundColor,
-          body: Container(
-            decoration: config.backgroundImagePath != null
-                ? BoxDecoration(
-                    image: DecorationImage(
-                      image: FileImage(File(config.backgroundImagePath!)),
-                      fit: BoxFit.cover,
-                    ),
-                  )
-                : null,
-            child: GestureDetector(
-            onHorizontalDragEnd: (details) {
-              if (details.primaryVelocity! > 0) {
-                _previousSlide();
-              } else if (details.primaryVelocity! < 0) {
-                _nextSlide();
-              }
-            },
-            child: Stack(
-              children: [
-                // Main Content
-                Center(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 80, vertical: 60),
-                    child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 400),
-                      transitionBuilder: transitionBuilder,
-                      child: Column(
-                        key: ValueKey(_currentSlideIndex),
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          // Section Label
-                          FadeInDown(
-                            duration: const Duration(milliseconds: 600),
-                            child: Text(
-                              currentSlide.label,
-                              style: TextStyle(
-                                color: config.referenceColor,
-                                fontSize: 48 * config.scale,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 2,
+        child: Focus(
+          focusNode: _focusNode,
+          autofocus: true,
+          child: Scaffold(
+            backgroundColor: config.backgroundImagePath != null ? Colors.transparent : config.backgroundColor,
+            body: Container(
+              decoration: config.backgroundImagePath != null
+                  ? BoxDecoration(
+                      image: DecorationImage(
+                        image: FileImage(File(config.backgroundImagePath!)),
+                        fit: BoxFit.cover,
+                      ),
+                    )
+                  : null,
+              child: GestureDetector(
+              onHorizontalDragEnd: (details) {
+                if (details.primaryVelocity! > 0) {
+                  _previousSlide();
+                } else if (details.primaryVelocity! < 0) {
+                  _nextSlide();
+                }
+              },
+              child: Stack(
+                children: [
+                  // Main Content
+                  Center(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 80, vertical: 60),
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 400),
+                        transitionBuilder: transitionBuilder,
+                        child: Column(
+                          key: ValueKey(_currentSlideIndex),
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Section Label
+                            FadeInDown(
+                              duration: const Duration(milliseconds: 600),
+                              child: Text(
+                                currentSlide.label,
+                                style: TextStyle(
+                                  color: config.referenceColor,
+                                  fontSize: 48 * config.scale,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 2,
+                                ),
                               ),
                             ),
-                          ),
-                          const SizedBox(height: 40),
-                          // Content - Maximum 2 lines
-                          Flexible(
-                            child: FadeInUp(
-                              duration: const Duration(milliseconds: 800),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: currentSlide.lines.map((line) => Flexible(
-                                  child: Padding(
-                                    padding: const EdgeInsets.only(bottom: 20),
-                                    child: Text(
-                                      line,
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        color: config.verseColor,
-                                        fontSize: (currentSlide.isTitle ? 64 : 72) * config.scale,
-                                        fontWeight: FontWeight.bold,
-                                        height: 1.3,
-                                        letterSpacing: 1,
+                            const SizedBox(height: 40),
+                            // Content - Maximum 2 lines
+                            Flexible(
+                              child: FadeInUp(
+                                duration: const Duration(milliseconds: 800),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: currentSlide.lines.map((line) => Flexible(
+                                    child: Padding(
+                                      padding: const EdgeInsets.only(bottom: 20),
+                                      child: Text(
+                                        line,
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          color: config.verseColor,
+                                          fontSize: (currentSlide.isTitle ? 64 : 72) * config.scale,
+                                          fontWeight: FontWeight.bold,
+                                          height: 1.3,
+                                          letterSpacing: 1,
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                )).toList(),
+                                  )).toList(),
+                                ),
                               ),
                             ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Navigation Hint
+                  Positioned(
+                    bottom: 30,
+                    right: 30,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.black54,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.white24),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.arrow_back, color: Colors.white54, size: 20),
+                          const SizedBox(width: 12),
+                          Text(
+                            '${_currentSlideIndex + 1} / ${_slides.length}',
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
+                          const SizedBox(width: 12),
+                          const Icon(Icons.arrow_forward, color: Colors.white54, size: 20),
                         ],
                       ),
                     ),
                   ),
-                ),
-                // Navigation Hint
-                Positioned(
-                  bottom: 30,
-                  right: 30,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                    decoration: BoxDecoration(
-                      color: Colors.black54,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.white24),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.arrow_back, color: Colors.white54, size: 20),
-                        const SizedBox(width: 12),
-                        Text(
-                          '${_currentSlideIndex + 1} / ${_slides.length}',
-                          style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        const Icon(Icons.arrow_forward, color: Colors.white54, size: 20),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

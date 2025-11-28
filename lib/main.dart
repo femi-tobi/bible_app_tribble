@@ -8,6 +8,7 @@ import 'providers/bible_provider.dart';
 import 'providers/ghs_provider.dart';
 import 'providers/sermon_provider.dart';
 import 'providers/presentation_config_provider.dart';
+import 'providers/theme_provider.dart';
 import 'screens/home_screen.dart';
 import 'screens/ghs_presentation_screen.dart';
 import 'screens/bible_presentation_screen.dart';
@@ -230,28 +231,54 @@ class BibleApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => GhsProvider()),
         ChangeNotifierProvider(create: (_) => SermonProvider()),
         ChangeNotifierProvider(create: (_) => PresentationConfigProvider()..load()),
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
       ],
-      child: MaterialApp(
-        title: 'Bible App',
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          brightness: Brightness.dark,
-          primaryColor: const Color(0xFF1E1E1E),
-          scaffoldBackgroundColor: const Color(0xFF121212),
-          textTheme: GoogleFonts.interTextTheme(
-            ThemeData.dark().textTheme,
-          ).apply(
-            bodyColor: Colors.white,
-            displayColor: Colors.white,
-          ),
-          colorScheme: const ColorScheme.dark(
-            primary: Color(0xFF6C63FF),
-            secondary: Color(0xFF03DAC6),
-            surface: Color(0xFF1E1E1E),
-          ),
-          useMaterial3: true,
-        ),
-        home: const HomeScreen(),
+      child: Consumer<ThemeProvider>(
+        builder: (context, themeProvider, child) {
+          return MaterialApp(
+            title: 'Bible App',
+            debugShowCheckedModeBanner: false,
+            themeMode: themeProvider.themeMode,
+            // Dark Theme
+            darkTheme: ThemeData(
+              brightness: Brightness.dark,
+              primaryColor: const Color(0xFF1E1E1E),
+              scaffoldBackgroundColor: const Color(0xFF121212),
+              textTheme: GoogleFonts.interTextTheme(
+                ThemeData.dark().textTheme,
+              ).apply(
+                bodyColor: Colors.white,
+                displayColor: Colors.white,
+              ),
+              colorScheme: const ColorScheme.dark(
+                primary: Color(0xFF6C63FF),
+                secondary: Color(0xFF03DAC6),
+                surface: Color(0xFF1E1E1E),
+              ),
+              useMaterial3: true,
+            ),
+            // Light Theme
+            theme: ThemeData(
+              brightness: Brightness.light,
+              primaryColor: const Color(0xFFF5F5F5),
+              scaffoldBackgroundColor: const Color(0xFFFFFFFF),
+              textTheme: GoogleFonts.interTextTheme(
+                ThemeData.light().textTheme,
+              ).apply(
+                bodyColor: const Color(0xFF1E1E1E),
+                displayColor: const Color(0xFF1E1E1E),
+              ),
+              colorScheme: const ColorScheme.light(
+                primary: Color(0xFF6C63FF),
+                secondary: Color(0xFF03DAC6),
+                surface: Color(0xFFF5F5F5),
+                onSurface: Color(0xFF1E1E1E),
+              ),
+              useMaterial3: true,
+            ),
+            home: const HomeScreen(),
+          );
+        },
       ),
     );
   }

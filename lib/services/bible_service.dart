@@ -1,140 +1,243 @@
 import 'dart:convert';
 import 'package:flutter/services.dart';
-import '../models/verse.dart';
 import '../constants/bible_data.dart';
+import '../models/verse.dart';
 
 class BibleService {
-  List<dynamic>? _bibleData;
+  static final BibleService _instance = BibleService._internal();
+  factory BibleService() => _instance;
+  BibleService._internal();
 
-  Future<void> loadBible() async {
+  Map<String, dynamic>? _bibleData;
+  String _currentVersion = 'kjv';
+
+  String get currentVersion => _currentVersion;
+
+  final Map<String, String> availableVersions = {
+    'kjv': 'King James Version',
+    'niv': 'New International Version',
+    'akjv': 'American King James Version',
+    'nlv': 'New Life Version',
+  };
+
+  Future<void> loadBible([String? version]) async {
+    if (version != null) {
+      _currentVersion = version.toLowerCase();
+      _bibleData = null; // Force reload if version changes
+    }
+    
     if (_bibleData != null) return;
-    final String response = await rootBundle.loadString('assets/kjv.json');
-    _bibleData = json.decode(response);
+
+    String filename;
+    switch (_currentVersion) {
+      case 'niv':
+        filename = 'NIV_bible.json';
+        break;
+      case 'akjv':
+        filename = 'AKJV_bible.json';
+        break;
+      case 'nlv':
+        filename = 'NLV_bible.json';
+        break;
+      case 'kjv':
+      default:
+        filename = 'kjv.json';
+        break;
+    }
+
+    try {
+      final String response = await rootBundle.loadString('assets/$filename');
+      _bibleData = json.decode(response);
+    } catch (e) {
+      print('Error loading Bible version $_currentVersion: $e');
+      if (_currentVersion != 'kjv') {
+        print('Falling back to KJV');
+        _currentVersion = 'kjv';
+        await loadBible();
+      }
+    }
+  }
+
+  Future<void> changeVersion(String version) async {
+    if (availableVersions.containsKey(version.toLowerCase())) {
+      await loadBible(version);
+    } else {
+      throw Exception('Bible version $version not supported');
+    }
   }
 
   Future<BibleResponse> getVerses(String reference) async {
-    await loadBible();
+    await loadBible(); // Ensure data is loaded
 
-    // Parse reference (e.g., "John 3:16" or "Gn 1:1")
-    // Simple parsing logic: Split by space to get book and chapter:verse
-    // This is a basic implementation and might need refinement for books with numbers (1 John)
-    
-    String bookName = '';
-    int chapter = 0;
-    int verseNum = 0;
-    
-    // Normalize reference
-    reference = reference.trim();
-    
-    // Regex to separate book, chapter, and verse
-    // Handles "1 John 1:1", "John 3:16", "Genesis 1:1"
-    final RegExp regex = RegExp(r'^(\d?\s?[a-zA-Z]+)\s+(\d+):(\d+)$');
-    final match = regex.firstMatch(reference);
-
-    if (match != null) {
-      bookName = match.group(1)!.trim();
-      chapter = int.parse(match.group(2)!);
-      verseNum = int.parse(match.group(3)!);
-    } else {
-       // Fallback for just chapter selection or other formats if needed, 
-       // but for now we assume full verse reference for "Go Live"
-       throw Exception('Invalid reference format. Use "Book Chapter:Verse" (e.g., John 3:16)');
+    if (_bibleData == null) {
+      throw Exception('Bible data not loaded');
     }
 
-    // Find book in JSON
-    // The JSON uses abbreviations like "gn", "ex", etc.
-    // We need to map the input book name to these abbreviations.
-    // We can use our BibleData to find the abbreviation.
-    
+    final RegExp regex = RegExp(r'^(\d?\s?[a-zA-Z\s]+)\s+(\d+):(\d+(?:-\d+)?)$');
+    final match = regex.firstMatch(reference);
+
+    if (match == null) {
+      throw Exception('Invalid reference format: $reference');
+    }
+
+    String bookName = match.group(1)!.trim();
+    final int chapter = int.parse(match.group(2)!);
+    final String verseRange = match.group(3)!;
+
     final bibleBook = BibleData.books.firstWhere(
       (b) => b.name.toLowerCase() == bookName.toLowerCase() || 
              b.abbreviation.toLowerCase() == bookName.toLowerCase(),
       orElse: () => throw Exception('Book not found: $bookName'),
     );
+    
+    // Use the canonical name from BibleData
+    bookName = bibleBook.name;
 
-    final bookJson = _bibleData!.firstWhere(
-      (b) => b['abbrev'].toString().toLowerCase() == bibleBook.abbreviation.toLowerCase(),
-      orElse: () => throw Exception('Book data not found for: ${bibleBook.name}'),
-    );
-
-    final chapters = bookJson['chapters'] as List;
-    if (chapter < 1 || chapter > chapters.length) {
-      throw Exception('Chapter $chapter not found in ${bibleBook.name}');
+    dynamic bookData = _bibleData![bookName];
+    if (bookData == null) {
+       final key = _bibleData!.keys.firstWhere(
+         (k) => k.toLowerCase() == bookName.toLowerCase(),
+         orElse: () => '',
+       );
+       if (key.isNotEmpty) {
+         bookData = _bibleData![key];
+       }
     }
 
-    final versesList = chapters[chapter - 1] as List;
-    if (verseNum < 1 || verseNum > versesList.length) {
-      throw Exception('Verse $verseNum not found in ${bibleBook.name} $chapter');
+    if (bookData == null) {
+      throw Exception('Book data not found for: $bookName');
     }
 
-    final text = versesList[verseNum - 1].toString();
+    final chapterData = bookData[chapter.toString()];
+    if (chapterData == null) {
+      throw Exception('Chapter $chapter not found in $bookName');
+    }
 
-    final verseObj = Verse(
-      bookName: bibleBook.name,
-      chapter: chapter,
-      verse: verseNum,
-      text: text,
-    );
+    List<Verse> verses = [];
+    String fullText = '';
+
+    if (verseRange.contains('-')) {
+      final parts = verseRange.split('-');
+      final start = int.parse(parts[0]);
+      final end = int.parse(parts[1]);
+      
+      for (int i = start; i <= end; i++) {
+        final verseText = chapterData[i.toString()];
+        if (verseText != null) {
+          verses.add(Verse(
+            bookName: bookName,
+            chapter: chapter,
+            verse: i,
+            text: verseText.toString(),
+          ));
+          fullText += '${i > start ? " " : ""}${verseText.toString()}';
+        }
+      }
+    } else {
+      final verseNum = int.parse(verseRange);
+      final verseText = chapterData[verseRange];
+      if (verseText != null) {
+        verses.add(Verse(
+          bookName: bookName,
+          chapter: chapter,
+          verse: verseNum,
+          text: verseText.toString(),
+        ));
+        fullText = verseText.toString();
+      }
+    }
+
+    if (verses.isEmpty) {
+      throw Exception('Verses not found for reference: $reference');
+    }
 
     return BibleResponse(
       reference: reference,
-      verses: [verseObj],
-      text: text,
-      translationName: 'KJV',
+      verses: verses,
+      text: fullText,
+      translationName: availableVersions[_currentVersion] ?? _currentVersion.toUpperCase(),
     );
   }
 
   Future<List<Verse>> getChapter(String bookName, int chapter) async {
     await loadBible();
 
+    if (_bibleData == null) throw Exception('Bible data not loaded');
+
     final bibleBook = BibleData.books.firstWhere(
       (b) => b.name.toLowerCase() == bookName.toLowerCase() || 
              b.abbreviation.toLowerCase() == bookName.toLowerCase(),
       orElse: () => throw Exception('Book not found: $bookName'),
     );
+    
+    bookName = bibleBook.name;
 
-    final bookJson = _bibleData!.firstWhere(
-      (b) => b['abbrev'].toString().toLowerCase() == bibleBook.abbreviation.toLowerCase(),
-      orElse: () => throw Exception('Book data not found for: ${bibleBook.name}'),
-    );
-
-    final chapters = bookJson['chapters'] as List;
-    if (chapter < 1 || chapter > chapters.length) {
-      throw Exception('Chapter $chapter not found in ${bibleBook.name}');
+    dynamic bookData = _bibleData![bookName];
+    if (bookData == null) {
+       final key = _bibleData!.keys.firstWhere(
+         (k) => k.toLowerCase() == bookName.toLowerCase(),
+         orElse: () => '',
+       );
+       if (key.isNotEmpty) {
+         bookData = _bibleData![key];
+       }
     }
 
-    final versesList = chapters[chapter - 1] as List;
-    
-    return List.generate(versesList.length, (index) {
-      return Verse(
-        bookName: bibleBook.name,
-        chapter: chapter,
-        verse: index + 1,
-        text: versesList[index].toString(),
-      );
-    });
+    if (bookData == null) throw Exception('Book data not found');
+
+    final chapterData = bookData[chapter.toString()];
+    if (chapterData == null) throw Exception('Chapter not found');
+
+    List<Verse> verses = [];
+    if (chapterData is Map) {
+      // Sort keys to ensure verses are in order
+      final sortedKeys = chapterData.keys.map((k) => int.parse(k.toString())).toList()..sort();
+      
+      for (var key in sortedKeys) {
+        verses.add(Verse(
+          bookName: bookName,
+          chapter: chapter,
+          verse: key,
+          text: chapterData[key.toString()].toString(),
+        ));
+      }
+    }
+
+    return verses;
   }
 
   Future<int> getVerseCount(String bookName, int chapter) async {
     await loadBible();
+    
+    if (_bibleData == null) return 0;
 
     final bibleBook = BibleData.books.firstWhere(
       (b) => b.name.toLowerCase() == bookName.toLowerCase() || 
              b.abbreviation.toLowerCase() == bookName.toLowerCase(),
       orElse: () => throw Exception('Book not found: $bookName'),
     );
+    
+    bookName = bibleBook.name;
 
-    final bookJson = _bibleData!.firstWhere(
-      (b) => b['abbrev'].toString().toLowerCase() == bibleBook.abbreviation.toLowerCase(),
-      orElse: () => throw Exception('Book data not found for: ${bibleBook.name}'),
-    );
-
-    final chapters = bookJson['chapters'] as List;
-    if (chapter < 1 || chapter > chapters.length) {
-      return 0;
+    dynamic bookData = _bibleData![bookName];
+    if (bookData == null) {
+       final key = _bibleData!.keys.firstWhere(
+         (k) => k.toLowerCase() == bookName.toLowerCase(),
+         orElse: () => '',
+       );
+       if (key.isNotEmpty) {
+         bookData = _bibleData![key];
+       }
     }
 
-    final versesList = chapters[chapter - 1] as List;
-    return versesList.length;
+    if (bookData == null) return 0;
+
+    final chapterData = bookData[chapter.toString()];
+    if (chapterData == null) return 0;
+
+    if (chapterData is Map) {
+      return chapterData.length;
+    }
+    return 0;
   }
 }

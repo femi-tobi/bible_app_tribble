@@ -16,6 +16,26 @@ class BibleProvider with ChangeNotifier {
   bool get isLoading => _isLoading;
   String get error => _error;
 
+  String get currentVersion => _bibleService.currentVersion;
+  Map<String, String> get availableVersions => _bibleService.availableVersions;
+
+  Future<void> changeVersion(String version) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      await _bibleService.changeVersion(version);
+      // Reload current verse if available
+      if (_currentResponse != null) {
+        await searchVerse(_currentResponse!.reference);
+      }
+    } catch (e) {
+      _error = e.toString();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   Future<void> searchVerse(String reference) async {
     _isLoading = true;
     _error = '';

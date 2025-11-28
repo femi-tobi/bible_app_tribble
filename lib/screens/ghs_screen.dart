@@ -127,11 +127,11 @@ class _GhsScreenState extends State<GhsScreen> {
         focusNode: _keyboardFocusNode,
         autofocus: true,
         child: Scaffold(
-          backgroundColor: const Color(0xFF121212),
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           appBar: AppBar(
             title: const Text('Gospel Hymns & Songs'),
-            backgroundColor: const Color(0xFF2C2C2C),
-            foregroundColor: Colors.white,
+            backgroundColor: Theme.of(context).colorScheme.surface,
+            foregroundColor: Theme.of(context).colorScheme.onSurface,
           ),
           body: Row(
             children: [
@@ -139,7 +139,7 @@ class _GhsScreenState extends State<GhsScreen> {
               Expanded(
                 flex: 8,
                 child: Container(
-                  color: const Color(0xFF121212),
+                  color: Theme.of(context).scaffoldBackgroundColor,
                   padding: const EdgeInsets.all(8),
                   child: Column(
                     children: [
@@ -148,16 +148,22 @@ class _GhsScreenState extends State<GhsScreen> {
                         margin: const EdgeInsets.only(bottom: 8),
                         padding: const EdgeInsets.symmetric(horizontal: 12),
                         decoration: BoxDecoration(
-                          color: Colors.grey[900],
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? Colors.grey[900]
+                              : Colors.grey[200],
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: TextField(
                           controller: _searchController,
-                          style: const TextStyle(color: Colors.white),
+                          style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                           keyboardType: TextInputType.number,
                           decoration: InputDecoration(
                             hintText: 'Enter hymn number',
-                            hintStyle: TextStyle(color: Colors.grey[600]),
+                            hintStyle: TextStyle(
+                              color: Theme.of(context).brightness == Brightness.dark
+                                  ? Colors.grey[600]
+                                  : Colors.grey[500],
+                            ),
                             border: InputBorder.none,
                           ),
                           onSubmitted: (_) => _handleSearch(),
@@ -184,19 +190,23 @@ class _GhsScreenState extends State<GhsScreen> {
                                       decoration: BoxDecoration(
                                         color: isSelected
                                             ? const Color(0xFF03DAC6)
-                                            : const Color(0xFF2C2C2C),
+                                            : Theme.of(context).colorScheme.surface,
                                         borderRadius: BorderRadius.circular(8),
                                         border: Border.all(
                                           color: isSelected
                                               ? const Color(0xFF03DAC6)
-                                              : Colors.white12,
+                                              : Theme.of(context).brightness == Brightness.dark
+                                                  ? Colors.white12
+                                                  : Colors.black12,
                                         ),
                                       ),
                                       child: Center(
                                         child: Text(
                                           '$number',
                                           style: TextStyle(
-                                            color: isSelected ? Colors.black : Colors.white,
+                                            color: isSelected
+                                                ? Colors.black
+                                                : Theme.of(context).colorScheme.onSurface,
                                             fontSize: 16,
                                             fontWeight: FontWeight.bold,
                                           ),
@@ -220,9 +230,13 @@ class _GhsScreenState extends State<GhsScreen> {
                 flex: 2,
                 child: Container(
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1E1E1E),
+                    color: Theme.of(context).colorScheme.surface,
                     border: Border(
-                      left: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+                      left: BorderSide(
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.white.withValues(alpha: 0.1)
+                            : Colors.black.withValues(alpha: 0.1),
+                      ),
                     ),
                   ),
                   child: Column(
@@ -348,14 +362,14 @@ class _GhsScreenState extends State<GhsScreen> {
                       Container(
                         padding: const EdgeInsets.all(16),
                         width: double.infinity,
-                        color: const Color(0xFF2C2C2C),
+                        color: Theme.of(context).colorScheme.surface,
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text(
+                            Text(
                               'Hymn Preview',
                               style: TextStyle(
-                                color: Colors.white,
+                                color: Theme.of(context).colorScheme.onSurface,
                                 fontSize: 14,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -365,7 +379,7 @@ class _GhsScreenState extends State<GhsScreen> {
                               children: [
                                 IconButton(
                                   icon: const Icon(Icons.settings, size: 18),
-                                  color: Colors.white70,
+                                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                                   onPressed: () {
                                     showModalBottomSheet(
                                       context: context,
@@ -410,8 +424,8 @@ class _GhsScreenState extends State<GhsScreen> {
                                         const SizedBox(height: 4),
                                         Text(
                                           ghsProvider.currentHymn!.title,
-                                          style: const TextStyle(
-                                            color: Colors.white,
+                                          style: TextStyle(
+                                            color: Theme.of(context).colorScheme.onSurface,
                                             fontSize: 18,
                                             fontWeight: FontWeight.bold,
                                           ),
@@ -426,8 +440,10 @@ class _GhsScreenState extends State<GhsScreen> {
                                               children: [
                                                 Text(
                                                   'Verse ${entry.key + 1}',
-                                                  style: const TextStyle(
-                                                    color: Colors.grey,
+                                                  style: TextStyle(
+                                                    color: Theme.of(context).brightness == Brightness.dark
+                                                        ? Colors.grey
+                                                        : Colors.grey[700],
                                                     fontSize: 12,
                                                     fontWeight: FontWeight.bold,
                                                   ),
@@ -435,8 +451,8 @@ class _GhsScreenState extends State<GhsScreen> {
                                                 const SizedBox(height: 4),
                                                 Text(
                                                   entry.value,
-                                                  style: const TextStyle(
-                                                    color: Colors.white70,
+                                                  style: TextStyle(
+                                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                                                     fontSize: 14,
                                                     height: 1.5,
                                                   ),
@@ -447,10 +463,12 @@ class _GhsScreenState extends State<GhsScreen> {
                                         }).toList(),
                                         // Chorus
                                         if (ghsProvider.currentHymn!.chorus != null) ...[
-                                          const Text(
+                                          Text(
                                             'Chorus',
                                             style: TextStyle(
-                                              color: Colors.grey,
+                                              color: Theme.of(context).brightness == Brightness.dark
+                                                  ? Colors.grey
+                                                  : Colors.grey[700],
                                               fontSize: 12,
                                               fontWeight: FontWeight.bold,
                                             ),
@@ -469,10 +487,12 @@ class _GhsScreenState extends State<GhsScreen> {
                                       ],
                                     ),
                                   )
-                                : const Center(
+                                : Center(
                                     child: Text(
                                       'Select a hymn',
-                                      style: TextStyle(color: Colors.white30),
+                                      style: TextStyle(
+                                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
+                                      ),
                                     ),
                                   ),
                       ),

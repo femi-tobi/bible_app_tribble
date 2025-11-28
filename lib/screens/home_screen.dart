@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../providers/bible_provider.dart';
 import '../providers/presentation_config_provider.dart';
+import '../providers/theme_provider.dart';
 import '../services/speech_service.dart';
 import '../services/presentation_window_service.dart';
 import '../constants/bible_data.dart';
@@ -281,32 +282,71 @@ class _HomeScreenState extends State<HomeScreen> {
                     Expanded(
                       flex: 1,
                       child: Container(
-                        color: const Color(0xFF121212),
+                        color: Theme.of(context).scaffoldBackgroundColor,
                         padding: const EdgeInsets.all(8),
                         child: Column(
                           children: [
                             // Search Bar
                             Container(
                               margin: const EdgeInsets.only(bottom: 8),
-                              padding: const EdgeInsets.symmetric(horizontal: 12),
-                              decoration: BoxDecoration(
-                                color: Colors.grey[900],
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: TextField(
-                                controller: _searchController,
-                                style: const TextStyle(color: Colors.white),
-                                decoration: InputDecoration(
-                                  hintText: 'Search (e.g. John 3:16)',
-                                  hintStyle: TextStyle(color: Colors.grey[600]),
-                                  border: InputBorder.none,
-                                  suffixIcon: IconButton(
-                                    icon: Icon(_isListening ? Icons.mic : Icons.mic_none),
-                                    color: _isListening ? Colors.red : Colors.grey,
-                                    onPressed: _toggleListening,
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                                      decoration: BoxDecoration(
+                                        color: Theme.of(context).colorScheme.surface,
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: TextField(
+                                        controller: _searchController,
+                                        style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color),
+                                        decoration: InputDecoration(
+                                          hintText: 'Search (e.g. John 3:16)',
+                                          hintStyle: TextStyle(color: Theme.of(context).hintColor),
+                                          border: InputBorder.none,
+                                          suffixIcon: IconButton(
+                                            icon: Icon(_isListening ? Icons.mic : Icons.mic_none),
+                                            color: _isListening ? Colors.red : Theme.of(context).iconTheme.color,
+                                            onPressed: _toggleListening,
+                                          ),
+                                        ),
+                                        onSubmitted: (_) => _handleSearch(),
+                                      ),
+                                    ),
                                   ),
-                                ),
-                                onSubmitted: (_) => _handleSearch(),
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context).colorScheme.surface,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: DropdownButtonHideUnderline(
+                                      child: DropdownButton<String>(
+                                        value: bibleProvider.currentVersion,
+                                        dropdownColor: Theme.of(context).colorScheme.surface,
+                                        items: bibleProvider.availableVersions.entries.map((entry) {
+                                          return DropdownMenuItem<String>(
+                                            value: entry.key,
+                                            child: Text(
+                                              entry.key.toUpperCase(),
+                                              style: TextStyle(
+                                                color: Theme.of(context).textTheme.bodyLarge?.color,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          );
+                                        }).toList(),
+                                        onChanged: (String? newValue) {
+                                          if (newValue != null) {
+                                            context.read<BibleProvider>().changeVersion(newValue);
+                                          }
+                                        },
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                             // Grid
@@ -341,8 +381,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           Expanded(
                             child: Container(
                               decoration: BoxDecoration(
-                                color: const Color(0xFF1E1E1E),
-                                border: Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.1))),
+                                color: Theme.of(context).colorScheme.surface,
+                                border: Border(top: BorderSide(color: Theme.of(context).dividerColor)),
                               ),
                               child: _selectedBook != null
                                   ? ChapterGrid(
@@ -350,10 +390,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                       onChapterSelected: _onChapterSelected,
                                       themeColor: _selectedBook!.color,
                                     )
-                                  : const Center(
+                                  : Center(
                                       child: Text(
                                         'Select a Book',
-                                        style: TextStyle(color: Colors.white30),
+                                        style: TextStyle(color: Theme.of(context).hintColor),
                                       ),
                                     ),
                             ),
@@ -363,10 +403,10 @@ class _HomeScreenState extends State<HomeScreen> {
                           Expanded(
                             child: Container(
                               decoration: BoxDecoration(
-                                color: const Color(0xFF1E1E1E),
+                                color: Theme.of(context).colorScheme.surface,
                                 border: Border(
-                                  top: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
-                                  left: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+                                  top: BorderSide(color: Theme.of(context).dividerColor),
+                                  left: BorderSide(color: Theme.of(context).dividerColor),
                                 ),
                               ),
                               child: _selectedBook != null && _selectedChapter != null
@@ -376,10 +416,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                       onVerseSelected: _onVerseSelected,
                                       themeColor: _selectedBook!.color,
                                     )
-                                  : const Center(
+                                  : Center(
                                       child: Text(
                                         'Select a Chapter',
-                                        style: TextStyle(color: Colors.white30),
+                                        style: TextStyle(color: Theme.of(context).hintColor),
                                       ),
                                     ),
                             ),
@@ -396,8 +436,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 flex: 2,
                 child: Container(
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1E1E1E),
-                    border: Border(left: BorderSide(color: Colors.white.withValues(alpha: 0.1))),
+                    color: Theme.of(context).colorScheme.surface,
+                    border: Border(left: BorderSide(color: Theme.of(context).dividerColor)),
                   ),
                   child: Column(
                     children: [
@@ -471,6 +511,41 @@ class _HomeScreenState extends State<HomeScreen> {
                                 minimumSize: Size.zero,
                               ),
                               child: const Icon(Icons.settings, size: 16),
+                            ),
+                            const SizedBox(width: 8),
+                            // Theme Toggle Button
+                            Consumer<ThemeProvider>(
+                              builder: (context, themeProvider, _) {
+                                return ElevatedButton(
+                                  onPressed: () {
+                                    themeProvider.toggleTheme();
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    padding: const EdgeInsets.all(8),
+                                    backgroundColor: themeProvider.isDarkMode 
+                                        ? Colors.grey[800] 
+                                        : const Color(0xFF6C63FF),
+                                    foregroundColor: Colors.white,
+                                    minimumSize: Size.zero,
+                                  ),
+                                  child: AnimatedSwitcher(
+                                    duration: const Duration(milliseconds: 300),
+                                    transitionBuilder: (child, animation) {
+                                      return RotationTransition(
+                                        turns: animation,
+                                        child: child,
+                                      );
+                                    },
+                                    child: Icon(
+                                      themeProvider.isDarkMode 
+                                          ? Icons.light_mode 
+                                          : Icons.dark_mode,
+                                      key: ValueKey(themeProvider.isDarkMode),
+                                      size: 16,
+                                    ),
+                                  ),
+                                );
+                              },
                             ),
                           ],
                         ),
@@ -601,9 +676,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                           margin: const EdgeInsets.only(bottom: 12),
                                           padding: const EdgeInsets.all(12),
                                           decoration: BoxDecoration(
-                                            color: isSelected ? const Color(0xFF2C2C2C) : Colors.transparent,
+                                            color: isSelected 
+                                                ? Theme.of(context).colorScheme.primary.withOpacity(0.1) 
+                                                : Colors.transparent,
                                             borderRadius: BorderRadius.circular(8),
-                                            border: isSelected ? Border.all(color: const Color(0xFF03DAC6), width: 1) : null,
+                                            border: isSelected 
+                                                ? Border.all(color: Theme.of(context).colorScheme.secondary, width: 1) 
+                                                : null,
                                           ),
                                           child: Column(
                                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -611,7 +690,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                               Text(
                                                 '${verse.verse}',
                                                 style: TextStyle(
-                                                  color: isSelected ? const Color(0xFF03DAC6) : Colors.grey,
+                                                  color: isSelected 
+                                                      ? Theme.of(context).colorScheme.secondary 
+                                                      : Theme.of(context).hintColor,
                                                   fontWeight: FontWeight.bold,
                                                   fontSize: 12,
                                                 ),
@@ -622,7 +703,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                                 style: TextStyle(
                                                   fontSize: 14,
                                                   height: 1.5,
-                                                  color: isSelected ? Colors.white : Colors.white70,
+                                                  color: isSelected 
+                                                      ? Theme.of(context).textTheme.bodyLarge?.color 
+                                                      : Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7),
                                                 ),
                                               ),
                                             ],
@@ -631,10 +714,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                       );
                                     },
                                   )
-                                : const Center(
+                                : Center(
                                     child: Text(
                                       'Select a verse to preview',
-                                      style: TextStyle(color: Colors.white30),
+                                      style: TextStyle(color: Theme.of(context).hintColor),
                                     ),
                                   ),
                       ),
@@ -644,9 +727,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF1E1E1E),
+                            color: Theme.of(context).colorScheme.surface,
                             borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.white12),
+                            border: Border.all(color: Theme.of(context).dividerColor),
                           ),
                           child: Column(
                             children: [

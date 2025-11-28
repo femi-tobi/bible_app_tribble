@@ -10,12 +10,21 @@ import 'windows_window_service.dart';
 
 class PresentationWindowService {
   static int? _presentationWindowId;
+  static String? _currentType;
 
   static Future<void> openFullscreenPresentation(
     BuildContext context,
     Hymn hymn,
     Map<String, dynamic> config,
   ) async {
+    // If we already have a hymn window open, just update it
+    if (_presentationWindowId != null && _currentType == 'hymn') {
+      print('Reuse existing Hymn window (ID=$_presentationWindowId)');
+      await updateHymn(hymn);
+      await sendConfig(config);
+      return;
+    }
+    
     // Include config in hymn data
     final hymnData = hymn.toJson();
     hymnData['config'] = config;
@@ -27,6 +36,14 @@ class PresentationWindowService {
     Map<String, dynamic> verseData,
     Map<String, dynamic> config,
   ) async {
+    // If we already have a bible window open, just update it
+    if (_presentationWindowId != null && _currentType == 'bible') {
+      print('Reuse existing Bible window (ID=$_presentationWindowId)');
+      await updateBibleVerse(verseData);
+      await sendConfig(config);
+      return;
+    }
+
     // Include config in verse data
     final dataWithConfig = Map<String, dynamic>.from(verseData);
     dataWithConfig['config'] = config;
@@ -38,6 +55,14 @@ class PresentationWindowService {
     Sermon sermon,
     Map<String, dynamic> config,
   ) async {
+    // If we already have a sermon window open, just update it
+    if (_presentationWindowId != null && _currentType == 'sermon') {
+      print('Reuse existing Sermon window (ID=$_presentationWindowId)');
+      await updateSermon(sermon);
+      await sendConfig(config);
+      return;
+    }
+
     // Include config in sermon data
     final sermonData = sermon.toMap();
     sermonData['config'] = config;
@@ -70,9 +95,17 @@ class PresentationWindowService {
     // Close existing window if open
     if (_presentationWindowId != null) {
       try {
+        print('Closing existing presentation window: ID=$_presentationWindowId');
         await WindowController.fromWindowId(_presentationWindowId!).close();
+        _presentationWindowId = null; // Reset immediately after closing
+        _currentType = null;
+        // Wait a bit to ensure window is fully closed
+        await Future.delayed(const Duration(milliseconds: 300));
+        print('Existing window closed successfully');
       } catch (e) {
         print('Error closing existing window: $e');
+        _presentationWindowId = null; // Reset even on error
+        _currentType = null;
       }
     }
 
@@ -106,25 +139,6 @@ class PresentationWindowService {
       await windowController.setTitle(title);
       await windowController.show();
       
-      // Apply fullscreen on Windows to cover taskbar (includes making frameless)
-      // Apply fullscreen on Windows to cover taskbar (includes making frameless)
-      // NOTE: We now handle this inside the secondary window's main() using window_manager
-      /*
-      if (Platform.isWindows) {
-        try {
-          await WindowsWindowService.makeWindowFullscreen(
-            window.windowId,
-            rect.left.toInt(),
-            rect.top.toInt(),
-            rect.width.toInt(),
-            rect.height.toInt(),
-          );
-        } catch (e) {
-          print('Error applying fullscreen: $e');
-        }
-      }
-      */
-      
       print('Presentation window created: ID=${window.windowId}');
       print('Window positioned at: ${rect.left}, ${rect.top}');
       print('Window size: ${rect.width} x ${rect.height}');
@@ -132,6 +146,7 @@ class PresentationWindowService {
       
       // Store window ID for later communication
       _presentationWindowId = window.windowId;
+      _currentType = type;
       
     } catch (e) {
       print('Error creating presentation window: $e');
@@ -169,6 +184,34 @@ class PresentationWindowService {
     }
   }
 
+  static Future<void> updateHymn(Hymn hymn) async {
+    if (_presentationWindowId != null) {
+      try {
+        await DesktopMultiWindow.invokeMethod(
+          _presentationWindowId!,
+          'update_hymn',
+          hymn.toJson(),
+        );
+      } catch (e) {
+        print('Error updating Hymn: $e');
+      }
+    }
+  }
+
+  static Future<void> updateSermon(Sermon sermon) async {
+    if (_presentationWindowId != null) {
+      try {
+        await DesktopMultiWindow.invokeMethod(
+          _presentationWindowId!,
+          'update_sermon',
+          sermon.toMap(),
+        );
+      } catch (e) {
+        print('Error updating Sermon: $e');
+      }
+    }
+  }
+
   static Future<void> sendConfig(Map<String, dynamic> config) async {
     if (_presentationWindowId != null) {
       try {
@@ -193,6 +236,7 @@ class PresentationWindowService {
       } finally {
         // Always reset window ID, even if close fails
         _presentationWindowId = null;
+        _currentType = null;
       }
     }
   }

@@ -109,6 +109,23 @@ class _SermonPresentationScreenState extends State<SermonPresentationScreen> {
             print('Error updating config: $e');
           }
         });
+      } else if (call.method == 'update_sermon') {
+        final sermonData = call.arguments as Map;
+        setState(() {
+          try {
+            // Remove config if present
+            if (sermonData.containsKey('config')) {
+              sermonData.remove('config');
+            }
+            
+            _sermon = Sermon.fromMap(Map<String, dynamic>.from(sermonData));
+            _currentSlideIndex = 0;
+            _prepareSlides();
+            print('Sermon updated: ${_sermon.topic}');
+          } catch (e) {
+            print('Error updating sermon: $e');
+          }
+        });
       }
       return null;
     });
