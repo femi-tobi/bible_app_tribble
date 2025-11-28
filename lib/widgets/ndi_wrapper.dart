@@ -40,6 +40,9 @@ class _NdiWrapperState extends State<NdiWrapper> {
     if (_ndiService.isInitialized) {
       _ndiService.createSender(widget.streamName);
       _startCapture();
+    } else {
+      print('NDI initialization failed. Disabling NDI for this session.');
+      // Optionally update state to reflect disabled status
     }
   }
 

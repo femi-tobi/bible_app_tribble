@@ -236,6 +236,7 @@ class _GhsPresentationScreenState extends State<GhsPresentationScreen> {
 
     return NdiWrapper(
       streamName: 'Bible App - GHS',
+      enabled: config.enableNdi,
       child: CallbackShortcuts(
         bindings: {
           const SingleActivator(LogicalKeyboardKey.escape): () {

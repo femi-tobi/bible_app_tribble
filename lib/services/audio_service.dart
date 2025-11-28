@@ -82,7 +82,13 @@ class AudioService {
     final chapterStr = chapter.toString().padLeft(3, '0');
     
     // Build path: assets/Audio Bible/## BookName/## BookName ###.mp3
-    final path = 'assets/Audio Bible/$folderName/$folderName $chapterStr.mp3';
+    // Special case for Psalms: Folder is "19 Psalms" but files are "19 Psalm ###.mp3"
+    String filenamePrefix = folderName;
+    if (folderName == '19 Psalms') {
+      filenamePrefix = '19 Psalm';
+    }
+    
+    final path = 'assets/Audio Bible/$folderName/$filenamePrefix $chapterStr.mp3';
     
     return path;
   }

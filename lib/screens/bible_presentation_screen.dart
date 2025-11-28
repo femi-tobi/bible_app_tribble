@@ -179,6 +179,7 @@ class _BiblePresentationScreenState extends State<BiblePresentationScreen> {
 
     return NdiWrapper(
       streamName: 'Bible App - Scripture',
+      enabled: _config.enableNdi,
       child: CallbackShortcuts(
         bindings: {
           const SingleActivator(LogicalKeyboardKey.escape): () {

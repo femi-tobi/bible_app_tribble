@@ -6,6 +6,8 @@ import 'dart:io';
 import '../models/presentation_config.dart';
 import '../models/sermon.dart';
 
+import '../widgets/ndi_wrapper.dart';
+
 class SermonPresentationScreen extends StatefulWidget {
   final dynamic data;
 
@@ -160,16 +162,19 @@ class _SermonPresentationScreenState extends State<SermonPresentationScreen> {
 
     final currentSlide = _slides[_currentSlideIndex];
 
-    return CallbackShortcuts(
-      bindings: {
-        const SingleActivator(LogicalKeyboardKey.escape): () {
-          // Close handled by main app or window manager
+    return NdiWrapper(
+      streamName: 'Bible App - Sermon',
+      enabled: _config.enableNdi,
+      child: CallbackShortcuts(
+        bindings: {
+          const SingleActivator(LogicalKeyboardKey.escape): () {
+            // Close handled by main app or window manager
+          },
+          const SingleActivator(LogicalKeyboardKey.arrowRight): _nextSlide,
+          const SingleActivator(LogicalKeyboardKey.arrowLeft): _previousSlide,
+          const SingleActivator(LogicalKeyboardKey.space): _nextSlide,
         },
-        const SingleActivator(LogicalKeyboardKey.arrowRight): _nextSlide,
-        const SingleActivator(LogicalKeyboardKey.arrowLeft): _previousSlide,
-        const SingleActivator(LogicalKeyboardKey.space): _nextSlide,
-      },
-      child: Focus(
+        child: Focus(
         focusNode: _focusNode,
         autofocus: true,
         child: Scaffold(
@@ -193,6 +198,7 @@ class _SermonPresentationScreenState extends State<SermonPresentationScreen> {
               ),
             ),
           ),
+        ),
         ),
       ),
     );

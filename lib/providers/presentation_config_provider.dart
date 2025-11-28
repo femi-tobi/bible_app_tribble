@@ -66,4 +66,10 @@ class PresentationConfigProvider with ChangeNotifier {
     _save();
     notifyListeners();
   }
+
+  void setEnableNdi(bool v) {
+    _config.enableNdi = v;
+    _save();
+    notifyListeners();
+  }
 }

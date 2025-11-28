@@ -10,6 +10,7 @@ class PresentationConfig {
   PresentationAnimation animation;
 
   String? backgroundImagePath;
+  bool enableNdi;
 
   PresentationConfig({
     this.scale = 1.0,
@@ -18,6 +19,7 @@ class PresentationConfig {
     this.verseColor = Colors.white,
     this.animation = PresentationAnimation.none,
     this.backgroundImagePath,
+    this.enableNdi = true,
   });
 
   Map<String, dynamic> toMap() => {
@@ -27,6 +29,7 @@ class PresentationConfig {
         'verseColor': verseColor.value,
         'animation': animation.index,
         'backgroundImagePath': backgroundImagePath,
+        'enableNdi': enableNdi,
       };
 
   factory PresentationConfig.fromMap(Map<String, dynamic> map) =>
@@ -37,5 +40,6 @@ class PresentationConfig {
         verseColor: Color(map['verseColor'] as int),
         animation: PresentationAnimation.values[map['animation'] as int],
         backgroundImagePath: map['backgroundImagePath'] as String?,
+        enableNdi: map['enableNdi'] as bool? ?? true,
       );
 }

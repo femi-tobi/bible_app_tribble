@@ -110,13 +110,19 @@ class PresentationWindowService {
     }
 
     try {
-      // Create new window for presentation
-      // Pass type as first arg, data as second
-      // desktop_multi_window passes: ['multi_window', windowId, args...]
-      final window = await DesktopMultiWindow.createWindow(jsonEncode({
+      // Add a small delay to ensure previous window cleanup is handled by OS
+      await Future.delayed(const Duration(milliseconds: 500));
+      
+      print('Creating new presentation window...');
+      final jsonArgs = jsonEncode({
         'type': type,
         'data': data,
-      }));
+      });
+      
+      // Create new window for presentation
+      final window = await DesktopMultiWindow.createWindow(jsonArgs);
+      
+      print('Presentation window created: ID=${window.windowId}');
       
       // Get window controller
       final windowController = WindowController.fromWindowId(window.windowId);
@@ -130,16 +136,17 @@ class PresentationWindowService {
         targetDisplay.size.height,
       );
       
-      // Configure window for presentation
+      print('Setting window frame: $rect');
       await windowController.setFrame(rect);
+      
       String title = 'Presentation';
       if (type == 'hymn') title = 'GHS Presentation';
       else if (type == 'bible') title = 'Bible Presentation';
       else if (type == 'sermon') title = 'Sermon Presentation';
+      
       await windowController.setTitle(title);
       await windowController.show();
       
-      print('Presentation window created: ID=${window.windowId}');
       print('Window positioned at: ${rect.left}, ${rect.top}');
       print('Window size: ${rect.width} x ${rect.height}');
       print('========================');
@@ -156,8 +163,37 @@ class PresentationWindowService {
     }
   }
 
+  static Future<bool> _verifyWindowActive() async {
+    if (_presentationWindowId == null) return false;
+    
+    try {
+      final subWindowIds = await DesktopMultiWindow.getAllSubWindowIds();
+      if (!subWindowIds.contains(_presentationWindowId)) {
+        print('Window ID $_presentationWindowId not found in active windows list. Resetting.');
+        _presentationWindowId = null;
+        _currentType = null;
+        return false;
+      }
+      return true;
+    } catch (e) {
+      print('Error verifying window status: $e');
+      // If we can't verify, assume it might be bad if we're getting errors
+      return true; 
+    }
+  }
+
+  static Future<void> _handleCommunicationError(dynamic e) async {
+    print('Communication error with presentation window: $e');
+    if (e.toString().contains('target window not found') || 
+        e.toString().contains('Window not found')) {
+      print('Target window lost. Resetting state.');
+      _presentationWindowId = null;
+      _currentType = null;
+    }
+  }
+
   static Future<void> sendNavigationCommand(String direction) async {
-    if (_presentationWindowId != null) {
+    if (await _verifyWindowActive()) {
       try {
         await DesktopMultiWindow.invokeMethod(
           _presentationWindowId!,
@@ -165,13 +201,13 @@ class PresentationWindowService {
           direction,
         );
       } catch (e) {
-        print('Error sending navigation command: $e');
+        await _handleCommunicationError(e);
       }
     }
   }
 
   static Future<void> updateBibleVerse(Map<String, dynamic> verseData) async {
-    if (_presentationWindowId != null) {
+    if (await _verifyWindowActive()) {
       try {
         await DesktopMultiWindow.invokeMethod(
           _presentationWindowId!,
@@ -179,13 +215,18 @@ class PresentationWindowService {
           verseData,
         );
       } catch (e) {
-        print('Error updating Bible verse: $e');
+        await _handleCommunicationError(e);
+        // If window was lost, try to recreate it
+        if (_presentationWindowId == null) {
+           // We can't easily recreate here without context, but next user action will trigger create
+           print('Window lost during update. Next action will recreate it.');
+        }
       }
     }
   }
 
   static Future<void> updateHymn(Hymn hymn) async {
-    if (_presentationWindowId != null) {
+    if (await _verifyWindowActive()) {
       try {
         await DesktopMultiWindow.invokeMethod(
           _presentationWindowId!,
@@ -193,13 +234,13 @@ class PresentationWindowService {
           hymn.toJson(),
         );
       } catch (e) {
-        print('Error updating Hymn: $e');
+        await _handleCommunicationError(e);
       }
     }
   }
 
   static Future<void> updateSermon(Sermon sermon) async {
-    if (_presentationWindowId != null) {
+    if (await _verifyWindowActive()) {
       try {
         await DesktopMultiWindow.invokeMethod(
           _presentationWindowId!,
@@ -207,13 +248,13 @@ class PresentationWindowService {
           sermon.toMap(),
         );
       } catch (e) {
-        print('Error updating Sermon: $e');
+        await _handleCommunicationError(e);
       }
     }
   }
 
   static Future<void> sendConfig(Map<String, dynamic> config) async {
-    if (_presentationWindowId != null) {
+    if (await _verifyWindowActive()) {
       try {
         await DesktopMultiWindow.invokeMethod(
           _presentationWindowId!,
@@ -221,7 +262,7 @@ class PresentationWindowService {
           config,
         );
       } catch (e) {
-        print('Error sending config: $e');
+        await _handleCommunicationError(e);
       }
     }
   }

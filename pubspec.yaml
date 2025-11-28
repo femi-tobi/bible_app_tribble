@@ -95,6 +95,9 @@ flutter:
     - assets/kjv.json
     - assets/hymns.json
     - assets/ghs.json
+    - assets/NIV_bible.json
+    - assets/AKJV_bible.json
+    - assets/NLV_bible.json
     - assets/Audio Bible/
     - assets/Audio Bible/01 Genesis/
     - assets/Audio Bible/02 Exodus/

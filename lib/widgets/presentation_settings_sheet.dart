@@ -171,6 +171,18 @@ class PresentationSettingsSheet extends StatelessWidget {
                         ],
                       ),
                     ),
+
+                    
+                    const SizedBox(height: 16),
+                    _buildSectionHeader('Output Settings'),
+                    SwitchListTile(
+                      title: const Text('Enable NDI Output', style: TextStyle(color: Colors.white)),
+                      subtitle: const Text('Stream to OBS/vMix', style: TextStyle(color: Colors.white54, fontSize: 12)),
+                      value: provider.config.enableNdi,
+                      activeColor: const Color(0xFF03DAC6),
+                      onChanged: (value) => provider.setEnableNdi(value),
+                    ),
+
                     const SizedBox(height: 24),
                   ],
                 );
