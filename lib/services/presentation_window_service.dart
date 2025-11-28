@@ -92,27 +92,11 @@ class PresentationWindowService {
     }
     print('Selected external display: ID=${targetDisplay.id}');
 
-    // Close existing window if open
-    if (_presentationWindowId != null) {
-      try {
-        print('Closing existing presentation window: ID=$_presentationWindowId');
-        await WindowController.fromWindowId(_presentationWindowId!).close();
-        _presentationWindowId = null; // Reset immediately after closing
-        _currentType = null;
-        // Wait a bit to ensure window is fully closed
-        await Future.delayed(const Duration(milliseconds: 300));
-        print('Existing window closed successfully');
-      } catch (e) {
-        print('Error closing existing window: $e');
-        _presentationWindowId = null; // Reset even on error
-        _currentType = null;
-      }
-    }
+    // NEVER close and recreate windows - this causes "Lost connection to device" crash
+    // Instead, we only close if switching to a different presentation type
+    // For same type, we just update the content via method calls
 
     try {
-      // Add a small delay to ensure previous window cleanup is handled by OS
-      await Future.delayed(const Duration(milliseconds: 500));
-      
       print('Creating new presentation window...');
       final jsonArgs = jsonEncode({
         'type': type,
@@ -147,10 +131,6 @@ class PresentationWindowService {
       await windowController.setTitle(title);
       await windowController.show();
       
-      print('Window positioned at: ${rect.left}, ${rect.top}');
-      print('Window size: ${rect.width} x ${rect.height}');
-      print('========================');
-      
       // Store window ID for later communication
       _presentationWindowId = window.windowId;
       _currentType = type;
@@ -177,7 +157,6 @@ class PresentationWindowService {
       return true;
     } catch (e) {
       print('Error verifying window status: $e');
-      // If we can't verify, assume it might be bad if we're getting errors
       return true; 
     }
   }
@@ -216,11 +195,6 @@ class PresentationWindowService {
         );
       } catch (e) {
         await _handleCommunicationError(e);
-        // If window was lost, try to recreate it
-        if (_presentationWindowId == null) {
-           // We can't easily recreate here without context, but next user action will trigger create
-           print('Window lost during update. Next action will recreate it.');
-        }
       }
     }
   }
@@ -270,15 +244,22 @@ class PresentationWindowService {
   static Future<void> closePresentationWindow() async {
     if (_presentationWindowId != null) {
       try {
-        final windowController = WindowController.fromWindowId(_presentationWindowId!);
-        await windowController.close();
+        // Verify window still exists before trying to hide it
+        final subWindowIds = await DesktopMultiWindow.getAllSubWindowIds();
+        if (subWindowIds.contains(_presentationWindowId)) {
+          final windowController = WindowController.fromWindowId(_presentationWindowId!);
+          // Hide instead of close to prevent crash on next presentation
+          await windowController.hide();
+          print('Presentation window hidden: ID=$_presentationWindowId');
+        } else {
+          print('Window ID $_presentationWindowId already closed');
+        }
       } catch (e) {
-        print('Error closing presentation window: $e');
-      } finally {
-        // Always reset window ID, even if close fails
-        _presentationWindowId = null;
-        _currentType = null;
+        print('Error hiding presentation window: $e');
       }
+      // Don't reset _presentationWindowId - keep it so we can reuse the window
+      // Only reset the current type
+      _currentType = null;
     }
   }
 

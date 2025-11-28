@@ -5,7 +5,6 @@ import 'package:animate_do/animate_do.dart';
 import 'dart:io';
 import '../models/presentation_config.dart';
 import '../models/sermon.dart';
-
 import '../widgets/ndi_wrapper.dart';
 
 class SermonPresentationScreen extends StatefulWidget {
@@ -38,61 +37,6 @@ class _SermonPresentationScreenState extends State<SermonPresentationScreen> {
     });
   }
 
-  void _parseData() {
-    if (widget.data != null && widget.data is Map) {
-      final map = widget.data as Map;
-      
-      // Parse config if present
-      if (map['config'] != null && map['config'] is Map) {
-        try {
-          _config = PresentationConfig.fromMap(Map<String, dynamic>.from(map['config']));
-        } catch (e) {
-          print('Error parsing config: $e');
-        }
-      }
-
-      // Parse sermon
-      try {
-        // Remove config before parsing sermon
-        final sermonData = Map<String, dynamic>.from(map);
-        sermonData.remove('config');
-        _sermon = Sermon.fromMap(sermonData);
-      } catch (e) {
-        print('Error parsing sermon: $e');
-      }
-    }
-  }
-
-  void _prepareSlides() {
-    _slides = [];
-
-    // Title Slide
-    _slides.add(_SermonSlide(
-      type: _SlideType.title,
-      content: _sermon.topic,
-      subContent: _sermon.bibleText,
-    ));
-
-    // Points
-    for (var point in _sermon.points) {
-      // Main Point Slide
-      _slides.add(_SermonSlide(
-        type: _SlideType.point,
-        content: point.text,
-      ));
-
-      // Sub-points (accumulative or single? Let's do single for now for simplicity, or maybe list)
-      // Let's show the main point as header and sub-point as content
-      for (var subPoint in point.subPoints) {
-        _slides.add(_SermonSlide(
-          type: _SlideType.subPoint,
-          content: point.text, // Header
-          subContent: subPoint, // The sub-point
-        ));
-      }
-    }
-  }
-
   void _setupMessageHandler() {
     DesktopMultiWindow.setMethodHandler((call, fromWindowId) async {
       if (call.method == 'navigate_slide') {
@@ -115,7 +59,6 @@ class _SermonPresentationScreenState extends State<SermonPresentationScreen> {
         final sermonData = call.arguments as Map;
         setState(() {
           try {
-            // Remove config if present
             if (sermonData.containsKey('config')) {
               sermonData.remove('config');
             }
@@ -131,6 +74,57 @@ class _SermonPresentationScreenState extends State<SermonPresentationScreen> {
       }
       return null;
     });
+  }
+
+  void _parseData() {
+    if (widget.data != null && widget.data is Map) {
+      final map = widget.data as Map;
+      
+      // Parse config if present
+      if (map['config'] != null && map['config'] is Map) {
+        try {
+          _config = PresentationConfig.fromMap(Map<String, dynamic>.from(map['config']));
+        } catch (e) {
+          print('Error parsing config: $e');
+        }
+      }
+
+      // Parse sermon
+      try {
+        final sermonData = Map<String, dynamic>.from(map);
+        sermonData.remove('config');
+        _sermon = Sermon.fromMap(sermonData);
+      } catch (e) {
+        print('Error parsing sermon: $e');
+      }
+    }
+  }
+
+  void _prepareSlides() {
+    _slides = [];
+
+    // Title Slide
+    _slides.add(_SermonSlide(
+      type: _SlideType.title,
+      content: _sermon.topic,
+      subContent: _sermon.bibleText,
+    ));
+
+    // Points
+    for (var point in _sermon.points) {
+      _slides.add(_SermonSlide(
+        type: _SlideType.point,
+        content: point.text,
+      ));
+
+      for (var subPoint in point.subPoints) {
+        _slides.add(_SermonSlide(
+          type: _SlideType.subPoint,
+          content: point.text,
+          subContent: subPoint,
+        ));
+      }
+    }
   }
 
   void _nextSlide() {
@@ -167,38 +161,36 @@ class _SermonPresentationScreenState extends State<SermonPresentationScreen> {
       enabled: _config.enableNdi,
       child: CallbackShortcuts(
         bindings: {
-          const SingleActivator(LogicalKeyboardKey.escape): () {
-            // Close handled by main app or window manager
-          },
+          const SingleActivator(LogicalKeyboardKey.escape): () {},
           const SingleActivator(LogicalKeyboardKey.arrowRight): _nextSlide,
           const SingleActivator(LogicalKeyboardKey.arrowLeft): _previousSlide,
           const SingleActivator(LogicalKeyboardKey.space): _nextSlide,
         },
         child: Focus(
-        focusNode: _focusNode,
-        autofocus: true,
-        child: Scaffold(
-          backgroundColor: _config.backgroundImagePath != null ? Colors.transparent : _config.backgroundColor,
-          body: Container(
-            decoration: _config.backgroundImagePath != null
-                ? BoxDecoration(
-                    image: DecorationImage(
-                      image: FileImage(File(_config.backgroundImagePath!)),
-                      fit: BoxFit.cover,
-                    ),
-                  )
-                : null,
-            child: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(60.0),
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 500),
-                  child: _buildSlideContent(currentSlide),
+          focusNode: _focusNode,
+          autofocus: true,
+          child: Scaffold(
+            backgroundColor: _config.backgroundImagePath != null ? Colors.transparent : _config.backgroundColor,
+            body: Container(
+              decoration: _config.backgroundImagePath != null
+                  ? BoxDecoration(
+                      image: DecorationImage(
+                        image: FileImage(File(_config.backgroundImagePath!)),
+                        fit: BoxFit.cover,
+                      ),
+                    )
+                  : null,
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(60.0),
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 500),
+                    child: _buildSlideContent(currentSlide),
+                  ),
                 ),
               ),
             ),
           ),
-        ),
         ),
       ),
     );
@@ -207,36 +199,39 @@ class _SermonPresentationScreenState extends State<SermonPresentationScreen> {
   Widget _buildSlideContent(_SermonSlide slide) {
     switch (slide.type) {
       case _SlideType.title:
-        return Column(
-          key: ValueKey(_currentSlideIndex),
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            FadeInDown(
-              child: Text(
-                slide.content,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: _config.referenceColor, // Use reference color for topic
-                  fontSize: 72 * _config.scale,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            if (slide.subContent != null && slide.subContent!.isNotEmpty) ...[
-              const SizedBox(height: 40),
-              FadeInUp(
+        return Flexible(
+          child: Column(
+            key: ValueKey(_currentSlideIndex),
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              FadeInDown(
                 child: Text(
-                  slide.subContent!,
+                  slide.content,
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: _config.verseColor,
-                    fontSize: 48 * _config.scale,
-                    fontStyle: FontStyle.italic,
+                    color: _config.referenceColor,
+                    fontSize: 72 * _config.scale,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
+              if (slide.subContent != null && slide.subContent!.isNotEmpty) ...[
+                const SizedBox(height: 40),
+                FadeInUp(
+                  child: Text(
+                    slide.subContent!,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: _config.verseColor,
+                      fontSize: 48 * _config.scale,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ),
+              ],
             ],
-          ],
+          ),
         );
       case _SlideType.point:
         return Center(
@@ -254,32 +249,37 @@ class _SermonPresentationScreenState extends State<SermonPresentationScreen> {
           ),
         );
       case _SlideType.subPoint:
-        return Column(
-          key: ValueKey(_currentSlideIndex),
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              slide.content, // Main point as header
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: _config.referenceColor.withOpacity(0.7),
-                fontSize: 40 * _config.scale,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 40),
-            FadeInUp(
-              child: Text(
-                slide.subContent ?? '',
+        return Flexible(
+          child: Column(
+            key: ValueKey(_currentSlideIndex),
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                slide.content,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: _config.verseColor,
-                  fontSize: 56 * _config.scale,
-                  fontWeight: FontWeight.w500,
+                  color: _config.referenceColor.withOpacity(0.7),
+                  fontSize: 40 * _config.scale,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
-            ),
-          ],
+              const SizedBox(height: 40),
+              Flexible(
+                child: FadeInUp(
+                  child: Text(
+                    slide.subContent ?? '',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: _config.verseColor,
+                      fontSize: 56 * _config.scale,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         );
     }
   }

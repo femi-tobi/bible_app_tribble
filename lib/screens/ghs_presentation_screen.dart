@@ -11,7 +11,12 @@ import '../models/hymn.dart';
 import '../widgets/ndi_wrapper.dart';
 
 class GhsPresentationScreen extends StatefulWidget {
-  const GhsPresentationScreen({super.key});
+  final Map<String, dynamic> data;
+
+  const GhsPresentationScreen({
+    super.key,
+    required this.data,
+  });
 
   @override
   State<GhsPresentationScreen> createState() => _GhsPresentationScreenState();
@@ -42,7 +47,6 @@ class _GhsPresentationScreenState extends State<GhsPresentationScreen> {
           _previousSlide();
         }
       } else if (call.method == 'init_config') {
-        // Update config via provider
         final configData = call.arguments as Map;
         try {
           context.read<PresentationConfigProvider>().loadFromMap(Map<String, dynamic>.from(configData));
@@ -53,7 +57,6 @@ class _GhsPresentationScreenState extends State<GhsPresentationScreen> {
       } else if (call.method == 'update_hymn') {
         final hymnData = call.arguments as Map;
         try {
-          // Remove config if present
           if (hymnData.containsKey('config')) {
             hymnData.remove('config');
           }
@@ -61,7 +64,6 @@ class _GhsPresentationScreenState extends State<GhsPresentationScreen> {
           final hymn = Hymn.fromJson(Map<String, dynamic>.from(hymnData));
           context.read<GhsProvider>().setCurrentHymnDirect(hymn);
           
-          // Re-prepare slides
           setState(() {
             _currentSlideIndex = 0;
             _prepareSlides();

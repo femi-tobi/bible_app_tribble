@@ -163,7 +163,9 @@ Widget _createHymnPresentationWindow(int windowId, Hymn? hymn, Map<String, dynam
         ),
         useMaterial3: true,
       ),
-      home: const GhsPresentationScreen(),
+      home: GhsPresentationScreen(
+        data: hymn?.toJson() ?? {},
+      ),
     ),
   );
 }

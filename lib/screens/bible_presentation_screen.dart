@@ -36,6 +36,32 @@ class _BiblePresentationScreenState extends State<BiblePresentationScreen> {
     });
   }
 
+  void _setupMessageHandler() {
+    DesktopMultiWindow.setMethodHandler((call, fromWindowId) async {
+      if (call.method == 'update_verse') {
+        final verseData = call.arguments as Map;
+        setState(() {
+          _bookName = verseData['book'] ?? '';
+          _chapter = verseData['chapter'] ?? 0;
+          _verse = verseData['verse'] ?? 0;
+          _text = verseData['text'] ?? '';
+        });
+        print('Updated verse: $_bookName $_chapter:$_verse');
+      } else if (call.method == 'init_config') {
+        final configData = call.arguments as Map;
+        setState(() {
+          try {
+            _config = PresentationConfig.fromMap(Map<String, dynamic>.from(configData));
+            print('Config updated: scale=${_config.scale}');
+          } catch (e) {
+            print('Error updating config: $e');
+          }
+        });
+      }
+      return null;
+    });
+  }
+
   void _parseData() {
     print('BiblePresentationScreen: Parsing data...');
     print('Data type: ${widget.data.runtimeType}');
@@ -63,39 +89,6 @@ class _BiblePresentationScreenState extends State<BiblePresentationScreen> {
     } else {
       print('ERROR: Data is null or not a Map!');
     }
-  }
-
-  void _setupMessageHandler() {
-    DesktopMultiWindow.setMethodHandler((call, fromWindowId) async {
-      if (call.method == 'navigate_slide') {
-        final direction = call.arguments as String;
-        if (direction == 'next') {
-          // Navigation handled by main app's BibleProvider
-        } else if (direction == 'previous') {
-          // Navigation handled by main app's BibleProvider
-        }
-      } else if (call.method == 'update_verse') {
-        final verseData = call.arguments as Map;
-        setState(() {
-          _bookName = verseData['book'] ?? '';
-          _chapter = verseData['chapter'] ?? 0;
-          _verse = verseData['verse'] ?? 0;
-          _text = verseData['text'] ?? '';
-        });
-        print('Updated verse: $_bookName $_chapter:$_verse');
-      } else if (call.method == 'init_config') {
-        final configData = call.arguments as Map;
-        setState(() {
-          try {
-            _config = PresentationConfig.fromMap(Map<String, dynamic>.from(configData));
-            print('Config updated: scale=${_config.scale}');
-          } catch (e) {
-            print('Error updating config: $e');
-          }
-        });
-      }
-      return null;
-    });
   }
 
   @override
@@ -183,78 +176,71 @@ class _BiblePresentationScreenState extends State<BiblePresentationScreen> {
       child: CallbackShortcuts(
         bindings: {
           const SingleActivator(LogicalKeyboardKey.escape): () {
-            // Close handled by main app
+            // ESC just closes the window, no message to main
           },
         },
         child: Focus(
           focusNode: _focusNode,
           autofocus: true,
-          child: CallbackShortcuts(
-            bindings: {
-              const SingleActivator(LogicalKeyboardKey.escape): () {
-                DesktopMultiWindow.invokeMethod(0, 'close_presentation', null);
-              },
-            },
-            child: Scaffold(
-              backgroundColor: _config.backgroundImagePath != null ? Colors.transparent : _config.backgroundColor,
-              body: Container(
-                decoration: _config.backgroundImagePath != null
-                    ? BoxDecoration(
-                        image: DecorationImage(
-                          image: FileImage(File(_config.backgroundImagePath!)),
-                          fit: BoxFit.cover,
-                        ),
-                      )
-                    : null,
-                child: Center(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 80, vertical: 60),
-                      child: AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 400),
-                        transitionBuilder: transitionBuilder,
-                        child: Column(
-                          key: ValueKey('$_bookName$_chapter:$_verse'),
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            FadeInDown(
-                              duration: const Duration(milliseconds: 600),
-                              child: Text(
-                                '$_bookName $_chapter:$_verse',
-                                style: TextStyle(
-                                  color: _config.referenceColor,
-                                  fontSize: 48 * _config.scale,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 2,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 40),
-                            Flexible(
-                              child: FadeInUp(
-                                duration: const Duration(milliseconds: 800),
-                                child: Text(
-                                  _text,
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    color: _config.verseColor,
-                                    fontSize: 72 * _config.scale,
-                                    fontWeight: FontWeight.bold,
-                                    height: 1.3,
-                                    letterSpacing: 1,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+          child: Scaffold(
+            backgroundColor: _config.backgroundImagePath != null ? Colors.transparent : _config.backgroundColor,
+            body: Container(
+              decoration: _config.backgroundImagePath != null
+                  ? BoxDecoration(
+                      image: DecorationImage(
+                        image: FileImage(File(_config.backgroundImagePath!)),
+                        fit: BoxFit.cover,
                       ),
+                    )
+                  : null,
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 80, vertical: 60),
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 400),
+                    transitionBuilder: transitionBuilder,
+                    child: Column(
+                      key: ValueKey('$_bookName$_chapter:$_verse'),
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        FadeInDown(
+                          duration: const Duration(milliseconds: 600),
+                          child: Text(
+                            '$_bookName $_chapter:$_verse',
+                            style: TextStyle(
+                              color: _config.referenceColor,
+                              fontSize: 48 * _config.scale,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 2,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 40),
+                        Flexible(
+                          child: FadeInUp(
+                            duration: const Duration(milliseconds: 800),
+                            child: Text(
+                              _text,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: _config.verseColor,
+                                fontSize: 72 * _config.scale,
+                                fontWeight: FontWeight.bold,
+                                height: 1.3,
+                                letterSpacing: 1,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
               ),
             ),
           ),
+        ),
       ),
     );
   }
