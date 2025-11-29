@@ -15,7 +15,7 @@ import 'ghs_screen.dart';
 import 'sermon_editor_screen.dart';
 import 'remote_control_screen.dart';
 
-import 'package:desktop_multi_window/desktop_multi_window.dart';
+import 'package:desktop_multi_window/desktop_multi_window.dart' as dmw;
 import 'package:audioplayers/audioplayers.dart';
 import '../services/audio_service.dart';
 import '../services/websocket_server.dart';
@@ -57,7 +57,7 @@ class _HomeScreenState extends State<HomeScreen> {
     });
 
     // Listen for messages from presentation window
-    DesktopMultiWindow.setMethodHandler((call, fromWindowId) async {
+    dmw.DesktopMultiWindow.setMethodHandler((call, fromWindowId) async {
       print('Received method call from presentation window: ${call.method}');
       if (call.method == 'close_presentation') {
         await PresentationWindowService.closePresentationWindow();
@@ -94,7 +94,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final provider = context.read<BibleProvider>();
     if (PresentationWindowService.isPresentationActive && provider.currentResponse != null) {
       // Check if there are verse parts to navigate
-      DesktopMultiWindow.invokeMethod(
+      dmw.DesktopMultiWindow.invokeMethod(
         PresentationWindowService.presentationWindowId!,
         'next_part',
         null,
@@ -109,7 +109,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final provider = context.read<BibleProvider>();
     if (PresentationWindowService.isPresentationActive && provider.currentResponse != null) {
       // Check if there are verse parts to navigate
-      DesktopMultiWindow.invokeMethod(
+      dmw.DesktopMultiWindow.invokeMethod(
         PresentationWindowService.presentationWindowId!,
         'previous_part',
         null,

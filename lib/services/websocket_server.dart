@@ -1,4 +1,4 @@
-import 'dart:async';
+ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:shelf/shelf.dart' as shelf;
@@ -46,7 +46,7 @@ class WebSocketServer {
 
     try {
       // Create WebSocket handler
-      final handler = webSocketHandler((WebSocketChannel webSocket) {
+      final handler = webSocketHandler((WebSocketChannel webSocket, String? protocol) {
         print('Client connected');
         _clients.add(webSocket);
 

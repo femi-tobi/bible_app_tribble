@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:desktop_multi_window/desktop_multi_window.dart';
+import 'package:desktop_multi_window/desktop_multi_window.dart' as dmw;
 import 'package:animate_do/animate_do.dart';
 import 'dart:io';
 import '../models/presentation_config.dart';
@@ -38,7 +38,7 @@ class _SermonPresentationScreenState extends State<SermonPresentationScreen> {
   }
 
   void _setupMessageHandler() {
-    DesktopMultiWindow.setMethodHandler((call, fromWindowId) async {
+    dmw.DesktopMultiWindow.setMethodHandler((call, fromWindowId) async {
       if (call.method == 'navigate_slide') {
         final direction = call.arguments as String;
         if (direction == 'next') {

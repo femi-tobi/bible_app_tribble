@@ -6,6 +6,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   audioplayers_windows
   desktop_multi_window
   screen_retriever_windows
+  speech_to_text_windows
   window_manager
 )
 
