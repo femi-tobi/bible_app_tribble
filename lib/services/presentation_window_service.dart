@@ -11,6 +11,11 @@ import 'windows_window_service.dart';
 class PresentationWindowService {
   static int? _presentationWindowId;
   static String? _currentType;
+  
+  // Public getter for presentation window ID
+  static int? get presentationWindowId => _presentationWindowId;
+  
+
 
   static Future<void> openFullscreenPresentation(
     BuildContext context,

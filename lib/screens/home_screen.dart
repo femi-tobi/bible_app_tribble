@@ -13,10 +13,12 @@ import '../widgets/verse_grid.dart';
 import '../widgets/presentation_settings_sheet.dart';
 import 'ghs_screen.dart';
 import 'sermon_editor_screen.dart';
+import 'remote_control_screen.dart';
 
 import 'package:desktop_multi_window/desktop_multi_window.dart';
 import 'package:audioplayers/audioplayers.dart';
 import '../services/audio_service.dart';
+import '../services/websocket_server.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -65,6 +67,81 @@ class _HomeScreenState extends State<HomeScreen> {
       }
       return null;
     });
+    
+    // Listen for WebSocket commands
+    _setupWebSocketListener();
+  }
+  
+  void _setupWebSocketListener() {
+    WebSocketServer.instance.commands.listen((command) {
+      final cmd = command['command'] as String?;
+      if (cmd == null) return;
+      
+      print('Received WebSocket command: $cmd');
+      
+      switch (cmd) {
+        case 'next':
+          _handleNextCommand();
+          break;
+        case 'previous':
+          _handlePreviousCommand();
+          break;
+      }
+    });
+  }
+  
+  void _handleNextCommand() {
+    final provider = context.read<BibleProvider>();
+    if (PresentationWindowService.isPresentationActive && provider.currentResponse != null) {
+      // Check if there are verse parts to navigate
+      DesktopMultiWindow.invokeMethod(
+        PresentationWindowService.presentationWindowId!,
+        'next_part',
+        null,
+      );
+      // If that fails, move to next verse
+      provider.nextVerse();
+      _updatePresentationVerse();
+    }
+  }
+  
+  void _handlePreviousCommand() {
+    final provider = context.read<BibleProvider>();
+    if (PresentationWindowService.isPresentationActive && provider.currentResponse != null) {
+      // Check if there are verse parts to navigate
+      DesktopMultiWindow.invokeMethod(
+        PresentationWindowService.presentationWindowId!,
+        'previous_part',
+        null,
+      );
+      // If that fails, move to previous verse
+      provider.previousVerse();
+      _updatePresentationVerse();
+    }
+  }
+  
+  void _updatePresentationVerse() {
+    final provider = context.read<BibleProvider>();
+    if (provider.currentResponse != null) {
+      final firstVerse = provider.currentResponse!.verses.first;
+      PresentationWindowService.updateBibleVerse({
+        'book': firstVerse.bookName,
+        'chapter': firstVerse.chapter,
+        'verse': firstVerse.verse,
+        'text': firstVerse.text,
+      });
+      
+      // Update WebSocket state
+      WebSocketServer.instance.updateState({
+        'type': 'bible',
+        'book': firstVerse.bookName,
+        'chapter': firstVerse.chapter,
+        'verse': firstVerse.verse,
+        'text': firstVerse.text,
+        'part': 0,
+        'totalParts': 1,
+      });
+    }
   }
 
   void _initAudioPlayer() {
@@ -343,6 +420,44 @@ class _HomeScreenState extends State<HomeScreen> {
                                             context.read<BibleProvider>().changeVersion(newValue);
                                           }
                                         },
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  // Remote Control Button
+                                  Material(
+                                    color: Theme.of(context).colorScheme.primary,
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: InkWell(
+                                      onTap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => const RemoteControlScreen(),
+                                          ),
+                                        );
+                                      },
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              Icons.phone_android,
+                                              color: Theme.of(context).colorScheme.onPrimary,
+                                              size: 20,
+                                            ),
+                                            const SizedBox(width: 6),
+                                            Text(
+                                              'Remote',
+                                              style: TextStyle(
+                                                color: Theme.of(context).colorScheme.onPrimary,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
                                       ),
                                     ),
                                   ),

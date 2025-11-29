@@ -5,6 +5,7 @@ import 'package:animate_do/animate_do.dart';
 import 'dart:io';
 import '../models/presentation_config.dart';
 import '../widgets/ndi_wrapper.dart';
+import '../services/verse_splitter.dart';
 
 class BiblePresentationScreen extends StatefulWidget {
   final dynamic data;
@@ -25,6 +26,10 @@ class _BiblePresentationScreenState extends State<BiblePresentationScreen> {
   int _verse = 0;
   String _text = '';
   PresentationConfig _config = PresentationConfig();
+  
+  // Verse splitting support
+  List<VersePart> _verseParts = [];
+  int _currentPartIndex = 0;
 
   @override
   void initState() {
@@ -45,8 +50,14 @@ class _BiblePresentationScreenState extends State<BiblePresentationScreen> {
           _chapter = verseData['chapter'] ?? 0;
           _verse = verseData['verse'] ?? 0;
           _text = verseData['text'] ?? '';
+          _currentPartIndex = 0;
+          _verseParts = []; // Reset to trigger re-split in didChangeDependencies
         });
         print('Updated verse: $_bookName $_chapter:$_verse');
+      } else if (call.method == 'next_part') {
+        _nextPart();
+      } else if (call.method == 'previous_part') {
+        _previousPart();
       } else if (call.method == 'init_config') {
         final configData = call.arguments as Map;
         setState(() {
@@ -89,6 +100,66 @@ class _BiblePresentationScreenState extends State<BiblePresentationScreen> {
     } else {
       print('ERROR: Data is null or not a Map!');
     }
+  }
+  
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Split verse here where MediaQuery is available
+    if (_text.isNotEmpty && _verseParts.isEmpty) {
+      _splitVerse();
+    }
+  }
+
+  
+  void _splitVerse() {
+    if (_text.isEmpty) {
+      _verseParts = [];
+      return;
+    }
+    
+    // Get screen size for splitting calculation
+    final size = MediaQuery.of(context).size;
+    _verseParts = VerseSplitter.splitVerse(
+      text: _text,
+      screenWidth: size.width,
+      screenHeight: size.height,
+      fontSize: 72, // Base verse font size
+      scale: _config.scale,
+    );
+    
+    print('Verse split into ${_verseParts.length} parts');
+  }
+  
+  void _nextPart() {
+    if (_currentPartIndex < _verseParts.length - 1) {
+      setState(() {
+        _currentPartIndex++;
+      });
+      print('Next part: $_currentPartIndex/${_verseParts.length}');
+    }
+  }
+  
+  void _previousPart() {
+    if (_currentPartIndex > 0) {
+      setState(() {
+        _currentPartIndex--;
+      });
+      print('Previous part: $_currentPartIndex/${_verseParts.length}');
+    }
+  }
+  
+  String _getCurrentText() {
+    if (_verseParts.isEmpty) return _text;
+    return _verseParts[_currentPartIndex].text;
+  }
+  
+  String _getVerseLabel() {
+    if (_verseParts.isEmpty || _verseParts.length == 1) {
+      return '$_bookName $_chapter:$_verse';
+    }
+    final part = _verseParts[_currentPartIndex];
+    return '$_bookName $_chapter:$_verse${part.label}';
   }
 
   @override
@@ -198,16 +269,18 @@ class _BiblePresentationScreenState extends State<BiblePresentationScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 80, vertical: 60),
                   child: AnimatedSwitcher(
                     duration: const Duration(milliseconds: 400),
-                    transitionBuilder: transitionBuilder,
+                    transitionBuilder: (Widget child, Animation<double> animation) {
+                      return FadeTransition(opacity: animation, child: child);
+                    },
                     child: Column(
-                      key: ValueKey('$_bookName$_chapter:$_verse'),
+                      key: ValueKey('$_bookName$_chapter:$_verse:$_currentPartIndex'),
                       mainAxisAlignment: MainAxisAlignment.center,
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         FadeInDown(
                           duration: const Duration(milliseconds: 600),
                           child: Text(
-                            '$_bookName $_chapter:$_verse',
+                            _getVerseLabel(),
                             style: TextStyle(
                               color: _config.referenceColor,
                               fontSize: 48 * _config.scale,
@@ -221,7 +294,7 @@ class _BiblePresentationScreenState extends State<BiblePresentationScreen> {
                           child: FadeInUp(
                             duration: const Duration(milliseconds: 800),
                             child: Text(
-                              _text,
+                              _getCurrentText(),
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 color: _config.verseColor,
