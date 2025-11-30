@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:desktop_multi_window/desktop_multi_window.dart' as dmw;
+import 'package:desktop_multi_window/desktop_multi_window.dart';
 import 'package:animate_do/animate_do.dart';
 import '../providers/ghs_provider.dart';
 import '../providers/presentation_config_provider.dart';
@@ -38,7 +38,7 @@ class _GhsPresentationScreenState extends State<GhsPresentationScreen> {
   }
 
   void _setupMessageHandler() {
-    dmw.DesktopMultiWindow.setMethodHandler((call, fromWindowId) async {
+    DesktopMultiWindow.setMethodHandler((call, fromWindowId) async {
       if (call.method == 'navigate_slide') {
         final direction = call.arguments as String;
         if (direction == 'next') {

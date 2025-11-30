@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:desktop_multi_window/desktop_multi_window.dart' as dmw;
+import 'package:desktop_multi_window/desktop_multi_window.dart';
 import 'package:screen_retriever/screen_retriever.dart';
 import 'package:window_manager/window_manager.dart';
 import 'dart:io' show Platform;
@@ -109,12 +109,12 @@ class PresentationWindowService {
       });
       
       // Create new window for presentation
-      final window = await dmw.DesktopMultiWindow.createWindow(jsonArgs);
+      final window = await DesktopMultiWindow.createWindow(jsonArgs);
       
       print('Presentation window created: ID=${window.windowId}');
       
       // Get window controller
-      final windowController = dmw.WindowController.fromWindowId(window.windowId);
+      final windowController = WindowController.fromWindowId(window.windowId);
       
       // Position and size window on target display
       final rect = Offset(
@@ -152,7 +152,7 @@ class PresentationWindowService {
     if (_presentationWindowId == null) return false;
     
     try {
-      final subWindowIds = (await dmw.DesktopMultiWindow.getAllSubWindowIds()).cast<int>();
+      final subWindowIds = await DesktopMultiWindow.getAllSubWindowIds();
       if (!subWindowIds.contains(_presentationWindowId)) {
         print('Window ID $_presentationWindowId not found in active windows list. Resetting.');
         _presentationWindowId = null;
@@ -179,7 +179,7 @@ class PresentationWindowService {
   static Future<void> sendNavigationCommand(String direction) async {
     if (await _verifyWindowActive()) {
       try {
-        await dmw.DesktopMultiWindow.invokeMethod(
+        await DesktopMultiWindow.invokeMethod(
           _presentationWindowId!,
           'navigate_slide',
           direction,
@@ -193,7 +193,7 @@ class PresentationWindowService {
   static Future<void> updateBibleVerse(Map<String, dynamic> verseData) async {
     if (await _verifyWindowActive()) {
       try {
-        await dmw.DesktopMultiWindow.invokeMethod(
+        await DesktopMultiWindow.invokeMethod(
           _presentationWindowId!,
           'update_verse',
           verseData,
@@ -207,7 +207,7 @@ class PresentationWindowService {
   static Future<void> updateHymn(Hymn hymn) async {
     if (await _verifyWindowActive()) {
       try {
-        await dmw.DesktopMultiWindow.invokeMethod(
+        await DesktopMultiWindow.invokeMethod(
           _presentationWindowId!,
           'update_hymn',
           hymn.toJson(),
@@ -221,7 +221,7 @@ class PresentationWindowService {
   static Future<void> updateSermon(Sermon sermon) async {
     if (await _verifyWindowActive()) {
       try {
-        await dmw.DesktopMultiWindow.invokeMethod(
+        await DesktopMultiWindow.invokeMethod(
           _presentationWindowId!,
           'update_sermon',
           sermon.toMap(),
@@ -235,7 +235,7 @@ class PresentationWindowService {
   static Future<void> sendConfig(Map<String, dynamic> config) async {
     if (await _verifyWindowActive()) {
       try {
-        await dmw.DesktopMultiWindow.invokeMethod(
+        await DesktopMultiWindow.invokeMethod(
           _presentationWindowId!,
           'init_config',
           config,
@@ -250,9 +250,9 @@ class PresentationWindowService {
     if (_presentationWindowId != null) {
       try {
         // Verify window still exists before trying to hide it
-        final subWindowIds = (await dmw.DesktopMultiWindow.getAllSubWindowIds()).cast<int>();
+        final subWindowIds = await DesktopMultiWindow.getAllSubWindowIds();
         if (subWindowIds.contains(_presentationWindowId)) {
-          final windowController = dmw.WindowController.fromWindowId(_presentationWindowId!);
+          final windowController = WindowController.fromWindowId(_presentationWindowId!);
           // Hide instead of close to prevent crash on next presentation
           await windowController.hide();
           print('Presentation window hidden: ID=$_presentationWindowId');

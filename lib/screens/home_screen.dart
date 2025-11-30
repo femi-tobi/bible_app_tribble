@@ -15,7 +15,7 @@ import 'ghs_screen.dart';
 import 'sermon_editor_screen.dart';
 import 'remote_control_screen.dart';
 
-import 'package:desktop_multi_window/desktop_multi_window.dart' as dmw;
+import 'package:desktop_multi_window/desktop_multi_window.dart';
 import 'package:audioplayers/audioplayers.dart';
 import '../services/audio_service.dart';
 import '../services/websocket_server.dart';
@@ -50,14 +50,14 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _initAudioPlayer();
-    _speechService.initialize();
+    _initSpeechService();
     // Request focus for keyboard shortcuts
     WidgetsBinding.instance.addPostFrameCallback((_) {
       FocusScope.of(context).requestFocus(_keyboardFocusNode);
     });
 
     // Listen for messages from presentation window
-    dmw.DesktopMultiWindow.setMethodHandler((call, fromWindowId) async {
+    DesktopMultiWindow.setMethodHandler((call, fromWindowId) async {
       print('Received method call from presentation window: ${call.method}');
       if (call.method == 'close_presentation') {
         await PresentationWindowService.closePresentationWindow();
@@ -94,7 +94,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final provider = context.read<BibleProvider>();
     if (PresentationWindowService.isPresentationActive && provider.currentResponse != null) {
       // Check if there are verse parts to navigate
-      dmw.DesktopMultiWindow.invokeMethod(
+      DesktopMultiWindow.invokeMethod(
         PresentationWindowService.presentationWindowId!,
         'next_part',
         null,
@@ -109,7 +109,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final provider = context.read<BibleProvider>();
     if (PresentationWindowService.isPresentationActive && provider.currentResponse != null) {
       // Check if there are verse parts to navigate
-      dmw.DesktopMultiWindow.invokeMethod(
+      DesktopMultiWindow.invokeMethod(
         PresentationWindowService.presentationWindowId!,
         'previous_part',
         null,
@@ -257,17 +257,91 @@ class _HomeScreenState extends State<HomeScreen> {
     // Keep _selectedBook and _selectedChapter so Go Live can access them
   }
 
+  Future<void> _initSpeechService() async {
+    final available = await _speechService.initialize();
+    if (available && mounted) {
+      setState(() => _isListening = true);
+      _speechService.listen(_processSpeechResult);
+    }
+  }
+
+  void _processSpeechResult(String text) {
+    if (text.isEmpty) return;
+    
+    // DEBUG: Print ALL recognized text
+    print('🎤 VOSK RECOGNIZED: "$text"');
+    
+    // Normalize text
+    final normalizedText = text.toLowerCase().trim();
+    
+    // Map spoken numbers to digits (common speech patterns)
+    final numberMap = {
+      'one': '1', 'two': '2', 'three': '3', 'four': '4', 'five': '5',
+      'six': '6', 'seven': '7', 'eight': '8', 'nine': '9', 'ten': '10',
+      'eleven': '11', 'twelve': '12', 'thirteen': '13', 'fourteen': '14',
+      'fifteen': '15', 'sixteen': '16', 'seventeen': '17', 'eighteen': '18',
+      'nineteen': '19', 'twenty': '20', 'thirty': '30', 'forty': '40',
+      'fifty': '50', 'sixty': '60', 'seventy': '70', 'eighty': '80', 'ninety': '90',
+    };
+    
+    String processedText = normalizedText;
+    numberMap.forEach((word, digit) {
+      processedText = processedText.replaceAll(word, digit);
+    });
+    
+    print('🔄 PROCESSED TEXT: "$processedText"');
+    
+    // Check for book names
+    bool foundMatch = false;
+    for (final book in BibleData.books) {
+      final bookName = book.name.toLowerCase();
+      if (processedText.contains(bookName)) {
+        print('📖 FOUND BOOK: ${book.name}');
+        
+        // Look for numbers after the book name
+        // Pattern: book name + optional space + chapter + (optional : or space + verse)
+        final pattern = RegExp('$bookName\\s*(\\d+)(?:[:\\s](\\d+))?');
+        final match = pattern.firstMatch(processedText);
+        
+        if (match != null) {
+          final chapter = match.group(1);
+          final verse = match.group(2);
+          
+          print('✅ MATCH FOUND - Chapter: $chapter, Verse: $verse');
+          
+          if (chapter != null) {
+            String query = '${book.name} $chapter';
+            if (verse != null) {
+              query += ':$verse';
+            }
+            
+            // Only update if query is different to avoid loops
+            if (_searchController.text != query) {
+              print('🎯 EXECUTING COMMAND: $query');
+              _searchController.text = query;
+              _handleSearch();
+              foundMatch = true;
+              break;
+            }
+          }
+        } else {
+          print('❌ NO REGEX MATCH for pattern: $bookName\\s*(\\d+)(?:[:\\s](\\d+))?');
+        }
+      }
+    }
+    
+    if (!foundMatch) {
+      print('⚠️ NO BIBLE REFERENCE DETECTED in: "$text"');
+    }
+  }
+
   void _toggleListening() {
     if (_isListening) {
       _speechService.stop();
       setState(() => _isListening = false);
     } else {
       setState(() => _isListening = true);
-      _speechService.listen((text) {
-        setState(() => _isListening = false);
-        _searchController.text = text;
-        _handleSearch();
-      });
+      _speechService.listen(_processSpeechResult);
     }
   }
 

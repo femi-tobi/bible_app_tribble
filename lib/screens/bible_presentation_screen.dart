@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:desktop_multi_window/desktop_multi_window.dart' as dmw;
+import 'package:desktop_multi_window/desktop_multi_window.dart';
 import 'package:animate_do/animate_do.dart';
 import 'dart:io';
 import '../models/presentation_config.dart';
@@ -42,7 +42,7 @@ class _BiblePresentationScreenState extends State<BiblePresentationScreen> {
   }
 
   void _setupMessageHandler() {
-    dmw.DesktopMultiWindow.setMethodHandler((call, fromWindowId) async {
+    DesktopMultiWindow.setMethodHandler((call, fromWindowId) async {
       if (call.method == 'update_verse') {
         final verseData = call.arguments as Map;
         setState(() {
