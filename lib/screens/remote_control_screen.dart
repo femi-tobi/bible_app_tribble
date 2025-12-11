@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:network_info_plus/network_info_plus.dart';
 import '../services/websocket_server.dart';
 
 class RemoteControlScreen extends StatefulWidget {
@@ -22,9 +23,24 @@ class _RemoteControlScreenState extends State<RemoteControlScreen> {
 
   Future<void> _startServer() async {
     if (_server.isRunning) {
+      // Server already running, just get the IP
       setState(() {
-        _ipAddress = 'Server already running';
+        _isStarting = true;
       });
+      
+      try {
+        // Get IP address even though server is already running
+        final info = await NetworkInfo().getWifiIP();
+        setState(() {
+          _ipAddress = info;
+          _isStarting = false;
+        });
+      } catch (e) {
+        setState(() {
+          _ipAddress = 'localhost';
+          _isStarting = false;
+        });
+      }
       return;
     }
 

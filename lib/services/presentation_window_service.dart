@@ -74,6 +74,25 @@ class PresentationWindowService {
     await _createWindow(context, sermonData, 'sermon');
   }
 
+  static Future<void> openTimerPresentation(
+    BuildContext context,
+    Map<String, dynamic> timerData,
+    Map<String, dynamic> config,
+  ) async {
+    // If we already have a timer window open, just update it
+    if (_presentationWindowId != null && _currentType == 'timer') {
+      print('Reuse existing Timer window (ID=$_presentationWindowId)');
+      await updateTimer(timerData);
+      await sendConfig(config);
+      return;
+    }
+
+    // Include config in timer data
+    final dataWithConfig = Map<String, dynamic>.from(timerData);
+    dataWithConfig['config'] = config;
+    await _createWindow(context, dataWithConfig, 'timer');
+  }
+
   static Future<void> _createWindow(
     BuildContext context,
     dynamic data,
@@ -132,6 +151,7 @@ class PresentationWindowService {
       if (type == 'hymn') title = 'GHS Presentation';
       else if (type == 'bible') title = 'Bible Presentation';
       else if (type == 'sermon') title = 'Sermon Presentation';
+      else if (type == 'timer') title = 'Timer Presentation';
       
       // await windowController.setTitle(title);
       await windowController.show();
@@ -225,6 +245,20 @@ class PresentationWindowService {
           _presentationWindowId!,
           'update_sermon',
           sermon.toMap(),
+        );
+      } catch (e) {
+        await _handleCommunicationError(e);
+      }
+    }
+  }
+
+  static Future<void> updateTimer(Map<String, dynamic> timerData) async {
+    if (await _verifyWindowActive()) {
+      try {
+        await DesktopMultiWindow.invokeMethod(
+          _presentationWindowId!,
+          'update_timer',
+          timerData,
         );
       } catch (e) {
         await _handleCommunicationError(e);

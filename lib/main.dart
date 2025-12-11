@@ -15,6 +15,10 @@ import 'screens/bible_presentation_screen.dart';
 import 'screens/sermon_presentation_screen.dart';
 import 'models/hymn.dart';
 import 'models/sermon.dart';
+import 'models/sermon.dart';
+import 'services/websocket_server.dart';
+import 'providers/timer_provider.dart';
+import 'screens/timer_presentation_screen.dart';
 
 void main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -64,6 +68,7 @@ void main(List<String> args) async {
       Hymn? hymn;
       Map<String, dynamic>? bibleData;
       Map<String, dynamic>? sermonData;
+      Map<String, dynamic>? timerData;
       Map<String, dynamic>? hymnConfig;
       String presentationType = '';
       
@@ -92,6 +97,9 @@ void main(List<String> args) async {
           } else if (type == 'sermon' && data != null) {
             sermonData = Map<String, dynamic>.from(data);
             print('✓ Sermon loaded: ${sermonData['topic']}');
+          } else if (type == 'timer' && data != null) {
+            timerData = Map<String, dynamic>.from(data);
+            print('✓ Timer loaded');
           }
         } catch (e) {
           print('✗ Error parsing presentation data: $e');
@@ -106,6 +114,8 @@ void main(List<String> args) async {
         runApp(_createBiblePresentationWindow(windowId, bibleData));
       } else if (presentationType == 'sermon') {
         runApp(_createSermonPresentationWindow(windowId, sermonData));
+      } else if (presentationType == 'timer') {
+        runApp(_createTimerPresentationWindow(windowId, timerData));
       }
       return;
     }
@@ -113,7 +123,34 @@ void main(List<String> args) async {
   
   print('=== MAIN WINDOW ===');
   
+  // Start WebSocket server for remote control
+  _startWebSocketServer();
+  
   runApp(const BibleApp());
+}
+
+/// Start WebSocket server for remote control
+Future<void> _startWebSocketServer() async {
+  try {
+    final server = WebSocketServer.instance;
+    final ip = await server.start();
+    
+    if (ip != null) {
+      print('');
+      print('╔════════════════════════════════════════════════════════╗');
+      print('║  📱 REMOTE CONTROL READY                               ║');
+      print('╠════════════════════════════════════════════════════════╣');
+      print('║  Open this URL on your phone:                          ║');
+      print('║  http://$ip:${server.port}${' ' * (43 - ip.length)}║');
+      print('╚════════════════════════════════════════════════════════╝');
+      print('');
+    } else {
+      print('⚠️  WebSocket server started but could not get IP address');
+      print('   Server is running on port ${server.port}');
+    }
+  } catch (e) {
+    print('❌ Failed to start WebSocket server: $e');
+  }
 }
 
 // Create hymn presentation window app
@@ -222,6 +259,32 @@ Widget _createSermonPresentationWindow(int windowId, Map<String, dynamic>? sermo
   );
 }
 
+// Create Timer presentation window app
+Widget _createTimerPresentationWindow(int windowId, Map<String, dynamic>? timerData) {
+  return MaterialApp(
+    title: 'Timer Presentation',
+    debugShowCheckedModeBanner: false,
+    theme: ThemeData(
+      brightness: Brightness.dark,
+      primaryColor: const Color(0xFF1E1E1E),
+      scaffoldBackgroundColor: const Color(0xFF121212),
+      textTheme: GoogleFonts.interTextTheme(
+        ThemeData.dark().textTheme,
+      ).apply(
+        bodyColor: Colors.white,
+        displayColor: Colors.white,
+      ),
+      colorScheme: const ColorScheme.dark(
+        primary: Color(0xFF6C63FF),
+        secondary: Color(0xFF03DAC6),
+        surface: Color(0xFF1E1E1E),
+      ),
+      useMaterial3: true,
+    ),
+    home: TimerPresentationScreen(data: timerData),
+  );
+}
+
 class BibleApp extends StatelessWidget {
   const BibleApp({super.key});
 
@@ -232,6 +295,7 @@ class BibleApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => BibleProvider()),
         ChangeNotifierProvider(create: (_) => GhsProvider()),
         ChangeNotifierProvider(create: (_) => SermonProvider()),
+        ChangeNotifierProvider(create: (_) => TimerProvider()),
         ChangeNotifierProvider(create: (_) => PresentationConfigProvider()..load()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
       ],

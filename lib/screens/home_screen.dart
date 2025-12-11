@@ -13,6 +13,7 @@ import '../widgets/verse_grid.dart';
 import '../widgets/presentation_settings_sheet.dart';
 import 'ghs_screen.dart';
 import 'sermon_editor_screen.dart';
+import 'timer_editor_screen.dart';
 import 'remote_control_screen.dart';
 
 import 'package:desktop_multi_window/desktop_multi_window.dart';
@@ -676,6 +677,29 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                                 child: const Text(
                                   'Sermon',
+                                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: ElevatedButton(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => const TimerEditorScreen(),
+                                    ),
+                                  );
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                  backgroundColor: Colors.orange,
+                                  foregroundColor: Colors.white,
+                                  minimumSize: Size.zero,
+                                ),
+                                child: const Text(
+                                  'Timer',
                                   style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
                                 ),
                               ),
