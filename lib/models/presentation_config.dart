@@ -11,6 +11,7 @@ class PresentationConfig {
 
   String? backgroundImagePath;
   bool enableNdi;
+  bool isLowerThird;
 
   PresentationConfig({
     this.scale = 1.0,
@@ -20,6 +21,7 @@ class PresentationConfig {
     this.animation = PresentationAnimation.none,
     this.backgroundImagePath,
     this.enableNdi = true,
+    this.isLowerThird = false,
   });
 
   Map<String, dynamic> toMap() => {
@@ -30,6 +32,7 @@ class PresentationConfig {
         'animation': animation.index,
         'backgroundImagePath': backgroundImagePath,
         'enableNdi': enableNdi,
+        'isLowerThird': isLowerThird,
       };
 
   factory PresentationConfig.fromMap(Map<String, dynamic> map) =>
@@ -41,5 +44,6 @@ class PresentationConfig {
         animation: PresentationAnimation.values[map['animation'] as int],
         backgroundImagePath: map['backgroundImagePath'] as String?,
         enableNdi: map['enableNdi'] as bool? ?? true,
+        isLowerThird: map['isLowerThird'] as bool? ?? false,
       );
 }

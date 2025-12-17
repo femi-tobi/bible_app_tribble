@@ -216,11 +216,10 @@ Widget _createBiblePresentationWindow(int windowId, Map<String, dynamic>? verseD
       brightness: Brightness.dark,
       primaryColor: const Color(0xFF1E1E1E),
       scaffoldBackgroundColor: const Color(0xFF121212),
-      textTheme: GoogleFonts.interTextTheme(
-        ThemeData.dark().textTheme,
-      ).apply(
+      textTheme: ThemeData.dark().textTheme.apply(
         bodyColor: Colors.white,
         displayColor: Colors.white,
+        fontFamily: 'Segoe UI',
       ),
       colorScheme: const ColorScheme.dark(
         primary: Color(0xFF6C63FF),
@@ -242,11 +241,10 @@ Widget _createSermonPresentationWindow(int windowId, Map<String, dynamic>? sermo
       brightness: Brightness.dark,
       primaryColor: const Color(0xFF1E1E1E),
       scaffoldBackgroundColor: const Color(0xFF121212),
-      textTheme: GoogleFonts.interTextTheme(
-        ThemeData.dark().textTheme,
-      ).apply(
+      textTheme: ThemeData.dark().textTheme.apply(
         bodyColor: Colors.white,
         displayColor: Colors.white,
+        fontFamily: 'Segoe UI',
       ),
       colorScheme: const ColorScheme.dark(
         primary: Color(0xFF6C63FF),
@@ -268,11 +266,10 @@ Widget _createTimerPresentationWindow(int windowId, Map<String, dynamic>? timerD
       brightness: Brightness.dark,
       primaryColor: const Color(0xFF1E1E1E),
       scaffoldBackgroundColor: const Color(0xFF121212),
-      textTheme: GoogleFonts.interTextTheme(
-        ThemeData.dark().textTheme,
-      ).apply(
+      textTheme: ThemeData.dark().textTheme.apply(
         bodyColor: Colors.white,
         displayColor: Colors.white,
+        fontFamily: 'Segoe UI',
       ),
       colorScheme: const ColorScheme.dark(
         primary: Color(0xFF6C63FF),
@@ -310,11 +307,10 @@ class BibleApp extends StatelessWidget {
               brightness: Brightness.dark,
               primaryColor: const Color(0xFF1E1E1E),
               scaffoldBackgroundColor: const Color(0xFF121212),
-              textTheme: GoogleFonts.interTextTheme(
-                ThemeData.dark().textTheme,
-              ).apply(
+              textTheme: ThemeData.dark().textTheme.apply(
                 bodyColor: Colors.white,
                 displayColor: Colors.white,
+                fontFamily: 'Segoe UI',
               ),
               colorScheme: const ColorScheme.dark(
                 primary: Color(0xFF6C63FF),
@@ -328,11 +324,10 @@ class BibleApp extends StatelessWidget {
               brightness: Brightness.light,
               primaryColor: const Color(0xFFF5F5F5),
               scaffoldBackgroundColor: const Color(0xFFFFFFFF),
-              textTheme: GoogleFonts.interTextTheme(
-                ThemeData.light().textTheme,
-              ).apply(
+              textTheme: ThemeData.light().textTheme.apply(
                 bodyColor: const Color(0xFF1E1E1E),
                 displayColor: const Color(0xFF1E1E1E),
+                fontFamily: 'Segoe UI',
               ),
               colorScheme: const ColorScheme.light(
                 primary: Color(0xFF6C63FF),

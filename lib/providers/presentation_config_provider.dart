@@ -72,4 +72,10 @@ class PresentationConfigProvider with ChangeNotifier {
     _save();
     notifyListeners();
   }
+
+  void setIsLowerThird(bool v) {
+    _config.isLowerThird = v;
+    _save();
+    notifyListeners();
+  }
 }

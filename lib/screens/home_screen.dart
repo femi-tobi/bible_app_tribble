@@ -682,27 +682,22 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             ),
                             const SizedBox(width: 8),
-                            Expanded(
-                              child: ElevatedButton(
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => const TimerEditorScreen(),
-                                    ),
-                                  );
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                                  backgroundColor: Colors.orange,
-                                  foregroundColor: Colors.white,
-                                  minimumSize: Size.zero,
-                                ),
-                                child: const Text(
-                                  'Timer',
-                                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
-                                ),
+                            ElevatedButton(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const TimerEditorScreen(),
+                                  ),
+                                );
+                              },
+                              style: ElevatedButton.styleFrom(
+                                padding: const EdgeInsets.all(8),
+                                backgroundColor: Colors.orange,
+                                foregroundColor: Colors.white,
+                                minimumSize: Size.zero,
                               ),
+                              child: const Icon(Icons.timer, size: 16),
                             ),
                             const SizedBox(width: 8),
                             ElevatedButton(

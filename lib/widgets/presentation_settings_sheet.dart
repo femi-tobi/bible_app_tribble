@@ -182,6 +182,13 @@ class PresentationSettingsSheet extends StatelessWidget {
                       activeColor: const Color(0xFF03DAC6),
                       onChanged: (value) => provider.setEnableNdi(value),
                     ),
+                    SwitchListTile(
+                      title: const Text('Lower Third Mode', style: TextStyle(color: Colors.white)),
+                      subtitle: const Text('Overlay text at bottom', style: TextStyle(color: Colors.white54, fontSize: 12)),
+                      value: provider.config.isLowerThird,
+                      activeColor: const Color(0xFF03DAC6),
+                      onChanged: (value) => provider.setIsLowerThird(value),
+                    ),
 
                     const SizedBox(height: 24),
                   ],

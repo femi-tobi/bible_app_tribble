@@ -106,11 +106,10 @@ class PresentationWindowApp extends StatelessWidget {
           brightness: Brightness.dark,
           primaryColor: const Color(0xFF1E1E1E),
           scaffoldBackgroundColor: Colors.black,
-          textTheme: GoogleFonts.interTextTheme(
-            ThemeData.dark().textTheme,
-          ).apply(
+          textTheme: ThemeData.dark().textTheme.apply(
             bodyColor: Colors.white,
             displayColor: Colors.white,
+            fontFamily: 'Segoe UI',
           ),
           colorScheme: const ColorScheme.dark(
             primary: Color(0xFF6C63FF),

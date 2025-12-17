@@ -254,9 +254,11 @@ class _BiblePresentationScreenState extends State<BiblePresentationScreen> {
           focusNode: _focusNode,
           autofocus: true,
           child: Scaffold(
-            backgroundColor: _config.backgroundImagePath != null ? Colors.transparent : _config.backgroundColor,
+            backgroundColor: _config.isLowerThird 
+                ? Colors.transparent 
+                : (_config.backgroundImagePath != null ? Colors.transparent : _config.backgroundColor),
             body: Container(
-              decoration: _config.backgroundImagePath != null
+              decoration: _config.backgroundImagePath != null && !_config.isLowerThird
                   ? BoxDecoration(
                       image: DecorationImage(
                         image: FileImage(File(_config.backgroundImagePath!)),
@@ -266,7 +268,9 @@ class _BiblePresentationScreenState extends State<BiblePresentationScreen> {
                   : null,
               child: Center(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 80, vertical: 60),
+                  padding: _config.isLowerThird 
+                      ? const EdgeInsets.only(left: 80, right: 80, bottom: 60, top: 20)
+                      : const EdgeInsets.symmetric(horizontal: 80, vertical: 60),
                   child: AnimatedSwitcher(
                     duration: const Duration(milliseconds: 400),
                     transitionBuilder: (Widget child, Animation<double> animation) {
@@ -274,34 +278,54 @@ class _BiblePresentationScreenState extends State<BiblePresentationScreen> {
                     },
                     child: Column(
                       key: ValueKey('$_bookName$_chapter:$_verse:$_currentPartIndex'),
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: _config.isLowerThird ? MainAxisAlignment.end : MainAxisAlignment.center,
+                      mainAxisSize: _config.isLowerThird ? MainAxisSize.max : MainAxisSize.min,
                       children: [
-                        FadeInDown(
-                          duration: const Duration(milliseconds: 600),
-                          child: Text(
-                            _getVerseLabel(),
-                            style: TextStyle(
-                              color: _config.referenceColor,
-                              fontSize: 48 * _config.scale,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 2,
+                        if (_config.isLowerThird) const Spacer(), // Push content down in lower third mode
+                        
+                        Flexible(
+                          child: FadeInDown(
+                            duration: const Duration(milliseconds: 600),
+                            child: Text(
+                              _getVerseLabel(),
+                              style: TextStyle(
+                                color: _config.referenceColor,
+                                fontSize: 48 * _config.scale,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 2,
+                                shadows: _config.isLowerThird ? [
+                                  const Shadow(color: Colors.black, blurRadius: 4, offset: Offset(2, 2)),
+                                  const Shadow(color: Colors.black, blurRadius: 8, offset: Offset(0, 0)),
+                                ] : null,
+                              ),
                             ),
                           ),
                         ),
-                        const SizedBox(height: 40),
-                        Flexible(
-                          child: FadeInUp(
-                            duration: const Duration(milliseconds: 800),
+                        const SizedBox(height: 20), // Reduce spacing for compact lower third
+                        FadeInUp(
+                          duration: const Duration(milliseconds: 800),
+                          child: Container(
+                            padding: _config.isLowerThird 
+                                ? const EdgeInsets.symmetric(horizontal: 24, vertical: 16)
+                                : EdgeInsets.zero,
+                            decoration: _config.isLowerThird 
+                                ? BoxDecoration(
+                                    color: Colors.black.withOpacity(0.6), // Semi-transparent background box for readability
+                                    borderRadius: BorderRadius.circular(16),
+                                  )
+                                : null,
                             child: Text(
                               _getCurrentText(),
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 color: _config.verseColor,
-                                fontSize: 72 * _config.scale,
+                                fontSize: (_config.isLowerThird ? 56 : 72) * _config.scale, // Slightly smaller font for lower third
                                 fontWeight: FontWeight.bold,
                                 height: 1.3,
                                 letterSpacing: 1,
+                                shadows: _config.isLowerThird ? [
+                                  const Shadow(color: Colors.black, blurRadius: 2, offset: Offset(1, 1)),
+                                ] : null,
                               ),
                             ),
                           ),
